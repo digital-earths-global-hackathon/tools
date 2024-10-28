@@ -1,0 +1,40 @@
+#!/bin/bash
+
+set -vx
+prefix=${prefix:-/fastdata/bm1235/python_environments_forge}
+name=${name:easy}
+yaml_file=${yaml_file:-environment.yaml}
+
+
+conda deactivate
+mamba deactivate
+deactivate
+
+set -e
+
+module purge
+module load git
+
+# nvidia-smi || ( >&2 echo  "need a gpu node to get the correct pytorch version" ; exit 1 )
+
+git_version=$(git rev-parse --verify HEAD)
+logname="hackathon_env_${git_version}_$(date +%F_%T)_install.log"
+
+if [ ! -d  ${prefix}/miniconda3 ] ; then
+mkdir -p ${prefix}/miniconda3
+wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh -O ${prefix}/miniconda3/miniconda.sh
+bash ${prefix}/miniconda3/miniconda.sh -b -u -p ${prefix}/miniconda3
+rm -f ${prefix}/miniconda3/miniconda.sh
+fi
+
+${prefix}/miniconda3/bin/conda update -n base -c conda-forge conda
+${prefix}/miniconda3/bin/conda install mamba
+command="${prefix}/miniconda3/bin/mamba env create --file ${yaml_file} --prefix ${prefix}/${name}"
+echo $command > ${logname}
+echo >> ${logname}
+
+$command >>${logname} 2>&1
+cp  install_kernel ${prefix}/${name}/bin/
+mv ${prefix}/${name}/bin/cdo ${prefix}/${name}/bin/cdo.do_not_use
+
+# -freeze-installed, --no-update-deps
