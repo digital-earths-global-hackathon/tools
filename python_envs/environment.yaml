@@ -49,5 +49,4 @@ dependencies:
 - pip
 - pip:
   - easygems
-  - gribscan
 name: easy
