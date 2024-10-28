@@ -6,7 +6,6 @@ dependencies:
 - cartopy
 - cdsapi
 - cfunits
-- cf-xarray
 - cmocean
 - cudatoolkit
 - dask

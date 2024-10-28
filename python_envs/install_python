@@ -1,8 +1,8 @@
 #!/bin/bash
 
 set -vx
-prefix=${prefix:-/fastdata/bm1235/python_environments_forge}
-name=${name:easy}
+prefix=${prefix:-$HOME/python_envs}
+name=${name:-easy}
 yaml_file=${yaml_file:-environment.yaml}
 
 
@@ -27,8 +27,8 @@ bash ${prefix}/miniconda3/miniconda.sh -b -u -p ${prefix}/miniconda3
 rm -f ${prefix}/miniconda3/miniconda.sh
 fi
 
-${prefix}/miniconda3/bin/conda update -n base -c conda-forge conda
-${prefix}/miniconda3/bin/conda install mamba
+${prefix}/miniconda3/bin/conda update -n base -c conda-forge conda mamba
+
 command="${prefix}/miniconda3/bin/mamba env create --file ${yaml_file} --prefix ${prefix}/${name}"
 echo $command > ${logname}
 echo >> ${logname}
