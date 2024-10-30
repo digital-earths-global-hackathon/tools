@@ -1,7 +1,7 @@
 channels:
 - conda-forge
 dependencies:
-- python>=3.12
+- python==3.12
 - aiohttp
 - cartopy
 - cdsapi
@@ -11,7 +11,9 @@ dependencies:
 - dask
 - dask-jobqueue
 - distributed
+- easygems
 - fastparquet
+- flox
 - hdf5plugin
 - healpix
 - hvplot
@@ -46,6 +48,5 @@ dependencies:
 - xgcm
 - zarr
 - pip
-- pip:
-  - easygems
+
 name: easy
