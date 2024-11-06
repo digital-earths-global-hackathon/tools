@@ -31,6 +31,7 @@ jobs:
     - name: initialize conda
       uses: conda-incubator/setup-miniconda@v3
       with:
+        installer-url: https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh
         activate-environment: easy
         auto-activate-base: false
         use-mamba: true
@@ -41,7 +42,7 @@ jobs:
       with:
         path: ${{ env.CONDA }}/envs
         key:
-          conda-${{ runner.os }}--${{ runner.arch }}--${{ hashFiles('python_envs/environment.yaml') }}-${{ env.CONDA_CACHE_NUMBER }}
+          conda-${{ runner.os }}--${{ runner.arch }}--${{ hashFiles('python_envs/environment.yaml', '.github/workflows/run_tests.yaml') }}-${{ env.CONDA_CACHE_NUMBER }}
       id: conda_cache
     - name: install conda environment
       run:
@@ -54,7 +55,7 @@ jobs:
       with:
         path: ${{ env.CONDA }}/envs
         key:
-          conda-${{ runner.os }}--${{ runner.arch }}--${{ hashFiles('python_envs/environment.yaml') }}-${{ env.CONDA_CACHE_NUMBER }}
+          conda-${{ runner.os }}--${{ runner.arch }}--${{ hashFiles('python_envs/environment.yaml', '.github/workflows/run_tests.yaml') }}-${{ env.CONDA_CACHE_NUMBER }}
     - name: run tests
       run: |
         conda info
