@@ -36,6 +36,8 @@ jobs:
         use-mamba: true
         miniforge-version: latest
         channels: conda-forge
+        channel-priority: strict
+        conda-remove-defaults: "true"
     - name: restore conda environment from cache
       uses: actions/cache/restore@v4
       with:
