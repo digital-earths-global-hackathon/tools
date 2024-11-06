@@ -7,7 +7,6 @@ dependencies:
 - cdsapi
 - cfunits
 - cmocean
-- cudatoolkit
 - dask
 - dask-jobqueue
 - distributed
@@ -33,6 +32,7 @@ dependencies:
 - opencv
 - pandas
 - pystac
+- pytest
 - requests
 - rioxarray
 - ruff

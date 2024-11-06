@@ -1,0 +1,63 @@
+name: run_tests
+
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: '0 0 * * *'
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+env:
+  # Increase this value to reset cache
+  CONDA_CACHE_NUMBER: 0
+  PYDEVD_DISABLE_FILE_VALIDATION: 1  # disable warnings that debugger might not work using frozen (i.e. faster-to-load) modules. We'd expect debugging to be done outside of CI, so here it's probably fine to hide it.
+
+jobs:
+  build:
+    # Only run scheduled jobs on the upstream repo
+    if: github.repository == 'digital-earths-global-hackathon/tools' || github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l {0}
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: initialize conda
+      uses: conda-incubator/setup-miniconda@v3
+      with:
+        activate-environment: easy
+        auto-activate-base: false
+        use-mamba: true
+        miniforge-version: latest
+        channels: conda-forge
+    - name: restore conda environment from cache
+      uses: actions/cache/restore@v4
+      with:
+        path: ${{ env.CONDA }}/envs
+        key:
+          conda-${{ runner.os }}--${{ runner.arch }}--${{ hashFiles('python_envs/environment.yaml') }}-${{ env.CONDA_CACHE_NUMBER }}
+      id: conda_cache
+    - name: install conda environment
+      run:
+        mamba env update -n easy -f python_envs/environment.yaml
+      if: steps.conda_cache.outputs.cache-hit != 'true'
+      id: install_conda_env
+    - name: upload conda environment to cache
+      uses: actions/cache/save@v4
+      if: steps.install_conda_env.outcome == 'success'
+      with:
+        path: ${{ env.CONDA }}/envs
+        key:
+          conda-${{ runner.os }}--${{ runner.arch }}--${{ hashFiles('python_envs/environment.yaml') }}-${{ env.CONDA_CACHE_NUMBER }}
+    - name: run tests
+      run: |
+        conda info
+        pytest 
+
+ 
