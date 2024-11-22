@@ -18,6 +18,7 @@ dependencies:
 - hvplot
 - intake==0.7.0
 - intake-xarray
+- intake-stac
 - ipykernel
 - iris
 - jupyter
