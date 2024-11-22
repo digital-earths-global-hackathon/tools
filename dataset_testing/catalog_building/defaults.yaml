@@ -1,0 +1,13 @@
+catalog_properties:
+  id: "global_hackathon"
+  description: "Digital Earths Global Hackathon"
+
+asset_properties:
+  metadata:
+    roles:
+    - data
+    - zarr
+    - https
+  xarray:open_kwargs:
+    consolidated: true
+

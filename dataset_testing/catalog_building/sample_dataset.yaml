@@ -1,0 +1,37 @@
+sources:
+  ngc4008:
+    args:
+      chunks: null
+      consolidated: true
+      urlpath: https://s3.eu-dkrz-1.dkrz.cloud/nextgems/rechunked_ngc4008/ngc4008_{{ time }}_{{ zoom }}.zarr
+    driver: zarr
+    parameters:
+      time:
+        allowed:
+        - PT15M
+        - PT3H
+        - P1D
+        default: P1D
+        description: time resolution of the dataset
+        type: str
+      zoom:
+        allowed:
+        - 10
+        - 9
+        - 8
+        - 7
+        - 6
+        - 5
+        - 4
+        - 3
+        - 2
+        - 1
+        - 0
+        default: 0
+        description: zoom resolution of the dataset
+        type: int
+    metadata:
+      project: nextGEMS
+      experiment_id: nextgems_prefinal
+      source_id: ICON-ESM
+      simulation_id: ngc4008
