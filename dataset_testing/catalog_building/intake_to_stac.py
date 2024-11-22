@@ -18,7 +18,7 @@ class catalog_generator:
         self.read_defaults()
         self.create_basic_catalog()
 
-    def read_defaults(self, source: Union[Path, str] = "defaults.yaml"):
+    def read_defaults(self, source: Union[Path, str] = Path(__file__).parent/"defaults.yaml"):
         with open(source) as source_file:
             self.defaults = yaml.safe_load(source_file)
 
