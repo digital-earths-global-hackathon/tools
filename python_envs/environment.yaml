@@ -36,6 +36,7 @@ dependencies:
 - requests
 - rioxarray
 - ruff
+- s3fs
 - scipy
 - seaborn
 - sh
