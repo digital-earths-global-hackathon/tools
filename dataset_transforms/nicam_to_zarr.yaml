@@ -1,0 +1,41 @@
+2d1h:
+  timechunk : 24  # can't be bigger than count of time steps in a file.
+  renames:
+    sa_t2m: tas
+    sa_albedo : sa_albedo
+    sa_cld_frac : sa_cld_frac
+    sa_cldi : clivi
+    sa_cldw : clwvi
+    sa_evap : sa_evap
+    sa_evap_energy : sa_evap_energy
+    sa_lh_sfc : hflsd
+    sa_lwd_sfc : rlds
+    sa_lwd_sfc_c : rlds_cs
+    sa_lwd_toa : rldt
+    sa_lwu_sfc : rlus
+    sa_lwu_sfc_c : rluscs
+    sa_lwu_toa : rlut
+    sa_lwu_toa_c : rlutcs
+    sa_ps : ps
+    sa_q2m : huss
+    sa_sh_sfc : hfssd
+    sa_slp_ecmwf : psl
+    sa_swd_sfc : rsds
+    sa_swd_sfc_c : rsdscs
+    sa_swd_toa : rsdt
+    sa_swu_sfc : rsus
+    sa_swu_sfc_c : rsuscs
+    sa_swu_toa : rsut
+    sa_swu_toa_c : rsutcs
+    sa_t2m : tas
+    sa_tem_atm : sa_tem_atm
+    sa_tem_sfc :  ts
+    sa_tppn : pr
+    sa_tppn_energy : sa_tppn_energy
+    sa_u10m : uas
+    sa_v10m : vas
+    sa_vap_atm : prw
+  isel:
+    lev: 0
+  
+  
