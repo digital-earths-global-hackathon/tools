@@ -17,7 +17,7 @@ dependencies:
 - healpix
 - hvplot
 - intake==0.7.0
-- intake-xarray
+- intake-xarray==0.7.0
 - ipykernel
 - iris
 - jupyter
