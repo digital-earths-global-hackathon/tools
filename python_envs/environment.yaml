@@ -24,7 +24,6 @@ dependencies:
 - jupyter
 - jupyterlab
 - jupytext
-- kerchunk
 - libnetcdf>=4.9.2
 - matplotlib
 - netcdf4
@@ -33,7 +32,6 @@ dependencies:
 - odc-stac
 - opencv
 - pandas
-- pre-commit
 - pystac
 - pytest
 - requests
@@ -47,7 +45,6 @@ dependencies:
 - tokenizers
 - tqdm
 - types-pyyaml
-- virtualizarr
 - uxarray
 - xarray
 - xgcm
