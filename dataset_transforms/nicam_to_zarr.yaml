@@ -1,6 +1,8 @@
 2d1h:
-  timechunk : 24  # can't be bigger than count of time steps in a file.
+  chunks:
+    time : 24  # can't be bigger than count of time steps in a file.
   renames:
+    cells: cell
     sa_t2m: tas
     sa_albedo : sa_albedo
     sa_cld_frac : sa_cld_frac
@@ -39,3 +41,23 @@
     lev: 0
   
   
+3dz6h:
+  chunks: 
+    time: 1
+  renames:
+    cells: cell
+    ms_dh: ms_dh
+    ms_lwhr: ms_lwhr
+    ms_pres: ms_pres
+    ms_qc: clw
+    ms_qg: qg
+    ms_qi: cli
+    ms_qr: qr
+    ms_qs: qs
+    ms_qv: hus
+    ms_rh: hur
+    ms_swhr: ms_swhr
+    ms_tem: ta
+    ms_u: ua
+    ms_v: va
+    ms_w: wa
