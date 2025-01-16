@@ -47,7 +47,7 @@ dependencies:
 - uxarray
 - xarray
 - xgcm
-- zarr
+- zarr<3.0.0
 - pip
 
 name: easy
