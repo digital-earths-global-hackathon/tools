@@ -25,9 +25,14 @@ jobs:
     defaults:
       run:
         shell: bash -l {0}
-
     steps:
     - uses: actions/checkout@v4
+    - name: Set current date as env variable
+      run: echo "NOW=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+    - name: compute cache hash
+      env:   
+        HASH: conda-${{ runner.os }}--${{ runner.arch }}--${{ hashFiles('python_envs/environment.yaml', '.github/workflows/run_tests.yaml') }}-${{ env.CONDA_CACHE_NUMBER }}-${{ env.NOW }}
+      run: echo "HASH=${HASH}"  >> $GITHUB_ENV
     - name: initialize conda
       uses: conda-incubator/setup-miniconda@v3
       with:
@@ -42,21 +47,18 @@ jobs:
       uses: actions/cache/restore@v4
       with:
         path: ${{ env.CONDA }}/envs
-        key:
-          conda-${{ runner.os }}--${{ runner.arch }}--${{ hashFiles('python_envs/environment.yaml', '.github/workflows/run_tests.yaml') }}-${{ env.CONDA_CACHE_NUMBER }}
+        key:  ${{ env.HASH }}
       id: conda_cache
     - name: install conda environment
       run:
         mamba env update -n easy -f python_envs/environment.yaml
-      if: steps.conda_cache.outputs.cache-hit != 'true'
       id: install_conda_env
     - name: upload conda environment to cache
       uses: actions/cache/save@v4
-      if: steps.install_conda_env.outcome == 'success'
+      if: (steps.install_conda_env.outcome == 'success')
       with:
         path: ${{ env.CONDA }}/envs
-        key:
-          conda-${{ runner.os }}--${{ runner.arch }}--${{ hashFiles('python_envs/environment.yaml', '.github/workflows/run_tests.yaml') }}-${{ env.CONDA_CACHE_NUMBER }}
+        key: ${{ env.HASH }}
     - name: run tests
       run: |
         conda info
