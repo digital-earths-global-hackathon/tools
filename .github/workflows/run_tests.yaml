@@ -33,6 +33,8 @@ jobs:
       env:   
         HASH_BASE: conda-${{ runner.os }}--${{ runner.arch }}--${{ hashFiles('python_envs/environment.yaml', '.github/workflows/run_tests.yaml') }}-${{ env.CONDA_CACHE_NUMBER }}-{{ env.NOW }}
       run: echo "HASH=${HASH_BASE}-${NOW}"  >> $GITHUB_ENV
+    - name: print env
+      run: env
     - name: initialize conda
       uses: conda-incubator/setup-miniconda@v3
       with:
@@ -47,8 +49,7 @@ jobs:
       uses: actions/cache/restore@v4
       with:
         path: ${{ env.CONDA }}/envs
-        key:
-          {{ env.HASH }}
+        key:  ${{ env.HASH }}
       id: conda_cache
     - name: install conda environment
       run:
@@ -59,8 +60,7 @@ jobs:
       if: (steps.install_conda_env.outcome == 'success')
       with:
         path: ${{ env.CONDA }}/envs
-        key:
-          ${{ env.HASH }}
+        key: ${{ env.HASH }}
     - name: run tests
       run: |
         conda info
