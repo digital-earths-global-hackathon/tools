@@ -31,8 +31,8 @@ jobs:
       run: echo "NOW=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
     - name: compute cache hash
       env:   
-        HASH_BASE: conda-${{ runner.os }}--${{ runner.arch }}--${{ hashFiles('python_envs/environment.yaml', '.github/workflows/run_tests.yaml') }}-${{ env.CONDA_CACHE_NUMBER }}-${{ env.NOW }}
-      run: echo "HASH=${HASH_BASE}-${NOW}"  >> $GITHUB_ENV
+        HASH: conda-${{ runner.os }}--${{ runner.arch }}--${{ hashFiles('python_envs/environment.yaml', '.github/workflows/run_tests.yaml') }}-${{ env.CONDA_CACHE_NUMBER }}-${{ env.NOW }}
+      run: echo "HASH=${HASH}"  >> $GITHUB_ENV
     - name: print env
       run: env
     - name: initialize conda
