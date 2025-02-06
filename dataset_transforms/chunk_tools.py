@@ -1,6 +1,10 @@
 from numcodecs import Blosc
 import numpy as np
+import logging
 
+logging.basicConfig()
+logger = logging.getLogger("chunk_tools")
+# logger.setLevel(logging.DEBUG)
 
 def get_encodings(outds, order, timechunk):
     encodings = {
@@ -24,7 +28,11 @@ def get_dtype(da):
 
 
 def get_chunksizes(outds, var, order, timechunk):
+    logger.debug(f"{outds=}, {var=}")
     var_shape = outds[var].shape
+    if len (var_shape )== 0 :
+        return tuple ([])
+    logger.debug(f"{var_shape=}")
     timechunk = min(timechunk, var_shape[0])
     spacechunk = compute_chunksize(order=order)
     if len(var_shape) == 1:
@@ -33,7 +41,7 @@ def get_chunksizes(outds, var, order, timechunk):
         chunksizes = (timechunk, spacechunk)
         return chunksizes
     elif len(var_shape) == 3:
-        chunksizes = (timechunk, 1, spacechunk)
+        chunksizes = (timechunk, 5, spacechunk)
         return chunksizes
     else:
         raise Exception(
