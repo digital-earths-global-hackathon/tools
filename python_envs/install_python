@@ -29,7 +29,7 @@ fi
 
 ${prefix}/miniconda3/bin/mamba update -y -n base -c conda-forge conda mamba
 
-command="${prefix}/miniconda3/bin/mamba env create -n easy --file ${yaml_file}"
+command="${prefix}/miniconda3/bin/mamba env create -n easy --file ${yaml_file} -y"
 echo $command > ${logname}
 echo >> ${logname}
 

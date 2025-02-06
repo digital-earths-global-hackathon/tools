@@ -13,6 +13,7 @@ dependencies:
 - easygems
 - fastparquet
 - flox
+- h5netcdf
 - hdf5plugin
 - healpix
 - hvplot
