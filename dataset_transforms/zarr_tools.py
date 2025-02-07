@@ -39,10 +39,24 @@ def write_parts(outds: xr.Dataset, path: Path, time_chunk: int):
             f"Could not read start from {status_filename}. Starting from zero."
         )
         start = 0
+    timeless = {x: outds[x] for x in outds.variables if "time" not in outds[x].dims}
+    logger.debug(f"{list(timeless)=}")
+    if start == 0:
+        wds = xr.Dataset(timeless)
+        wds.to_zarr(path, mode="r+")
+
     for i in range(start, len(outds.time), time_chunk):
         tslice = slice(i, i + time_chunk)
         for x in outds:
+            if x in timeless:
+                logger.debug(f"Skipping {x}, as it is timeless")
+                continue
+
+            logger.debug(f"Writing {x}, dims: {outds[x].dims}")
             wds = xr.Dataset({x: outds[x]})
+            drop = [k for k in wds.variables if k in timeless]
+            logger.debug(f" Dropping {drop}")
+            wds = wds.drop_vars(drop)
             (wds.isel(time=tslice).to_zarr(path, region=dict(time=tslice)))
         with open(status_filename, mode="w") as status:
             status.write(str(i + time_chunk))
