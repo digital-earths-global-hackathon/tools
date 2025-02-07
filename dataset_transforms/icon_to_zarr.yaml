@@ -1,0 +1,12 @@
+2d:
+  chunks:
+    time : 24  # can't be bigger than count of time steps in a file.
+  renames:
+    clon: lon
+    clat: lat
+  isel:
+    height: 0
+    height_2: 0
+  drop:
+    - clon_bnds
+    - clat_bnds
