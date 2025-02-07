@@ -36,6 +36,7 @@ def remap_delaunay(ds: xr.Dataset, order: int) -> xr.Dataset:
         keep_attrs=True,
         input_core_dims=[["ncells"]],
         output_core_dims=[["cell"]],
+        on_missing_core_dim="copy",
         output_dtypes=["f4"],
         vectorize=True,
         dask="parallelized",
