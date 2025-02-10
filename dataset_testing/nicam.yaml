@@ -1,0 +1,69 @@
+sources:
+  nicam_test:
+    args:
+      chunks: null
+      consolidated: true
+      urlpath: /large/work/florian/NICAM_{{
+        time }}_z{{ zoom }}.zarr
+    driver: zarr
+    parameters:
+      time:
+        allowed:
+        - 2d1h
+        - 3dz6h
+        default: 2d1h
+        description: variant of the dataset
+        type: str
+      zoom:
+        allowed:
+        - 9
+        - 8
+        - 7
+        - 6
+        - 5
+        - 4
+        - 3
+        - 2
+        - 1
+        - 0
+        default: 0
+        description: zoom resolution of the dataset
+        type: int
+    metadata:
+      project: global_hackathon
+      experiment_id: atm_only
+      source_id: NICAM
+      simulation_id: test
+
+  nicam_netcdf:
+    args:
+      urlpath: "/large/sftpgo/data/NICAM/hackathon/tksk_sample/*/{{ time }}/z0{{ zoom }}/*.nc"
+    driver: netcdf
+    parameters:
+      time:
+        allowed:
+        - 2d1h
+        - 3dz6h
+        default: 2d1h
+        description: variant of the dataset
+        type: str
+      zoom:
+        allowed:
+        - 9
+        - 8
+        - 7
+        - 6
+        - 5
+        - 4
+        - 3
+        - 2
+        - 1
+        - 0
+        default: 0
+        description: zoom resolution of the dataset
+        type: int
+    metadata:
+      project: global_hackathon
+      experiment_id: atm_only
+      source_id: NICAM
+      simulation_id: test
