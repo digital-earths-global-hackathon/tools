@@ -33,7 +33,7 @@ def write_parts(outds: xr.Dataset, path: Path, time_chunk: int):
     try:
         with open(status_filename) as status:
             start = int(status.read())
-            logger.info("Found status file. Starting from {start}.")
+            logger.info(f"Found status file. Starting from {start}.")
     except FileNotFoundError:
         logger.warning(
             f"Could not read start from {status_filename}. Starting from zero."
@@ -61,5 +61,3 @@ def write_parts(outds: xr.Dataset, path: Path, time_chunk: int):
         with open(status_filename, mode="w") as status:
             status.write(str(i + time_chunk))
         logger.info(f"Processed time steps starting at {i}")
-    if status_filename.exists:
-        status_filename.unlink()
