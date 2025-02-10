@@ -6,6 +6,7 @@ logging.basicConfig()
 logger = logging.getLogger("chunk_tools")
 # logger.setLevel(logging.DEBUG)
 
+
 def get_encodings(outds, order, timechunk):
     encodings = {
         var: dict(
@@ -30,8 +31,8 @@ def get_dtype(da):
 def get_chunksizes(outds, var, order, timechunk):
     logger.debug(f"{outds=}, {var=}")
     var_shape = outds[var].shape
-    if len (var_shape )== 0 :
-        return tuple ([])
+    if len(var_shape) == 0:
+        return tuple([])
     logger.debug(f"{var_shape=}")
     timechunk = min(timechunk, var_shape[0])
     spacechunk = compute_chunksize(order=order)
