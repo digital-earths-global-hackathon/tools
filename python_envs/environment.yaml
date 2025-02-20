@@ -5,6 +5,7 @@ dependencies:
 - aiohttp
 - cartopy
 - cdsapi
+- cfgrib
 - cfunits
 - cmocean
 - dask
@@ -18,6 +19,8 @@ dependencies:
 - healpix
 - hvplot
 - intake==0.7.0
+- intake-esm
+- intake-stac
 - intake-xarray==0.7.0
 - ipykernel
 - iris
@@ -50,5 +53,7 @@ dependencies:
 - xgcm
 - zarr<3.0.0
 - pip
+- pip:
+  - gribscan
 
 name: easy
