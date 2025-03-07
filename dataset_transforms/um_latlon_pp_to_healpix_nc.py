@@ -33,6 +33,7 @@ def gen_weights(da, zoom=10, weights_path=WEIGHTS_PATH):
 
     hp_lon, hp_lat = hp.pix2ang(nside=nside, ipix=np.arange(npix), lonlat=True, nest=True)
     hp_lon = hp_lon % 360  # [0, 360)
+    # TODO: is this necessary for the UM?
     hp_lon += 360 / (4 * nside) / 4  # shift quarter-width
 
     da_flat = da.stack(cell=('longitude', 'latitude'))
@@ -75,12 +76,10 @@ def hp_coarsen_with_weights(data, weights=None):
 class UMRegridder:
     """Regrid UM lat/lon .pp files to healpix .nc"""
 
-    VARNAMES_TO_PROCESS = {
-        'air_temperature',
-        'toa_outgoing_longwave_flux',
-    }
+    VARNAMES_TO_PROCESS = {'air_temperature', 'toa_outgoing_longwave_flux', }
 
-    def __init__(self, method='easygems_delaunay', zooms=range(11)[::-1], attrs=None, weights_path=WEIGHTS_PATH, tmpdir=TMPDIR):
+    def __init__(self, method='easygems_delaunay', zooms=range(11)[::-1], attrs=None, weights_path=WEIGHTS_PATH,
+                 tmpdir=TMPDIR):
         """Initate a UM regridder for a particular method/zoom levels.
 
         Parameters:
