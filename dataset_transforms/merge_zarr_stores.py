@@ -11,6 +11,7 @@ import filecmp
 import zarr
 import json
 
+
 def clone_dataset(source_dirs: List[Path], target_dir: Path):
     target = Path(target_dir)
     target.mkdir(parents=True)
@@ -22,6 +23,7 @@ def clone_dataset(source_dirs: List[Path], target_dir: Path):
     merge_zattrs(source_dirs, target)
     zarr.consolidate_metadata(target)
 
+
 def merge_zattrs(source_dirs: List[Path], target_dir: Path):
     attrs = {}
     for source_dir in source_dirs:
@@ -29,6 +31,7 @@ def merge_zattrs(source_dirs: List[Path], target_dir: Path):
             attrs.update(json.load(f))
     with open(Path(target_dir, ".zattrs"), "w") as f:
         json.dump(attrs, f)
+
 
 def do_cloning(target, files, dirs):
     [shutil.copy(f, target) for f in files]
@@ -41,6 +44,7 @@ def do_cloning(target, files, dirs):
         for _d in dd:
             os.symlink(_d, Path(t, os.path.basename(_d)))
 
+
 def get_files(source_dirs: List[Path]):
     files = {}
     dirs = {}
@@ -48,13 +52,15 @@ def get_files(source_dirs: List[Path]):
         files[source_dir], dirs[source_dir] = get_source_files_and_dirs(source_dir)
     return files, dirs
 
-def to_be_ignored (f):
-    ignore_files = [".zmetadata", ".zattrs" ]
+
+def to_be_ignored(f):
+    ignore_files = [".zmetadata", ".zattrs"]
     if f in ignore_files:
         return True
     return False
 
-def sort_duplicates(items:dict):
+
+def sort_duplicates(items: dict):
     new_names = {}
     for source_dir, source_files in items.items():
         for f in source_files:
@@ -64,15 +70,26 @@ def sort_duplicates(items:dict):
                     new_names[f] = source_dir
                 else:
                     check_duplicate(f"{source_dir}/{f}", f"{new_names[f]}/{f}")
-    return [ Path(d)/Path(f) for f, d in new_names.items() ]
+    return [Path(d) / Path(f) for f, d in new_names.items()]
+
 
 def check_duplicate(f1, f2):
     if Path(f1).is_dir():
-        comp = filecmp.dircmp
+        comp = run_dircomp(f1, f2)
     else:
         comp = filecmp.cmp
     if not comp(f1, f2):
         raise ValueError(f"Files {f1} and {f2} are different but should be the same.")
+
+
+def run_dircomp(f1, f2):
+    dcmp = filecmp.dircmp(f1, f2)
+    for x in [dcmp.left_only, dcmp.right_only, dcmp.diff_files, dcmp.funny_files]:
+        if x:
+            raise ValueError(
+                f"Files ['{f1}','{f2}']/{x} are different but should be the same."
+            )
+
 
 def get_source_files_and_dirs(path: Path):
     all = glob.glob(f"{path}/.*") + glob.glob(f"{path}/*")
