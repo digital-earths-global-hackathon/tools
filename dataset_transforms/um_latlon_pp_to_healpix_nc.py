@@ -11,17 +11,47 @@ import healpix as hp
 import iris
 import numpy as np
 import xarray as xr
+from cartopy.util import add_cyclic_point
 
 WEIGHTS_PATH = '/gws/nopw/j04/hrcm/mmuetz/weights/regrid_weights_N2560_hpz10.nc'
 TMPDIR = '/work/scratch-nopw2/mmuetz/wcrp_hackathon/'
 
 
-def gen_weights(da, zoom=10, lonname='longitude', latname='latitude', weights_path=WEIGHTS_PATH):
+def _xr_add_cyclic_point(da, lonname):
+    """Add a cyclic column to the longitude dim."""
+
+    # Use add_cyclic_point to interpolate input data
+    lon_idx = da.dims.index(lonname)
+    wrap_data, wrap_lon = add_cyclic_point(da.values, coord=da[lonname], axis=lon_idx)
+    coords = {n: c for n, c in da.coords.items() if n != lonname}
+    coords[lonname] = wrap_lon
+
+    # Generate output DataArray with new data but same structure as input
+    daout = xr.DataArray(data=wrap_data,
+                         coords=coords,
+                         dims=da.dims,
+                         attrs=da.attrs)
+    return daout
+
+
+def gen_weights(da, zoom=10, lonname='longitude', latname='latitude', add_cyclic=True, weights_path=WEIGHTS_PATH):
     """Generate delaunay weights for regridding.
+
+    Can use quite a lot of RAM: 30-40G for a UM N2560 conversion.
+
+    Assumption is that da has lon: 0 to 360, lat: -90 to 90.
+    It is important to make sure that the input domain contains the output domain, i.e. its convex hull is bigger.
+    Input domain is defined by the lat/lon coords in da, output domain is defined by healpix zoom level and is
+    roughly 0 to 360.
+    This is to ensure that the interpolation can proceed for all points - if you end up with NaNs in your output
+    it could be because of this, and it might be necessary to add a cyclic point to the input domain.
 
     Parameters:
         da (xr.DataArray): input data array with lat/lon coords to use.
         zoom (int): desired zoom level.
+        lonname (str): name of longitude coord.
+        latname (str): name of latitude coord.
+        add_cyclic (bool): whether to add cyclic points.
         weights_path (str): path to weights file.
     """
     weights_path = Path(weights_path)
@@ -31,10 +61,20 @@ def gen_weights(da, zoom=10, lonname='longitude', latname='latitude', weights_pa
     nside = hp.order2nside(zoom)
     npix = hp.nside2npix(nside)
 
+    # Expand input domain by one in the lon dim.
+    if add_cyclic:
+        print(da[lonname])
+        da = _xr_add_cyclic_point(da, lonname)
+        print(da[lonname])
+
     hp_lon, hp_lat = hp.pix2ang(nside=nside, ipix=np.arange(npix), lonlat=True, nest=True)
-    hp_lon = hp_lon % 360  # [0, 360)
+
     # TODO: is this necessary for the UM?
-    hp_lon += 360 / (4 * nside) / 4  # shift quarter-width
+    # This was in code that I copied the function from but I think I can leave it out.
+    # hp_lon += 360 / (4 * nside) / 4  # shift quarter-width
+    hp_lon = hp_lon % 360  # [0, 360)
+    # Apply a 360 degree offset. This ensures that all hp_lon are within da[lonname].
+    hp_lon[hp_lon == 0] = 360
 
     da_flat = da.stack(cell=(lonname, latname))
 
@@ -73,98 +113,39 @@ def hp_coarsen_with_weights(data, nan_weights=None):
     return coarse_field, new_weights
 
 
-class UMHealpixRegridder:
+class UMLatLon2HealpixRegridder:
     """Regrid UM lat/lon .pp files to healpix .nc"""
 
-    VARNAMES_TO_PROCESS = {'air_temperature', 'toa_outgoing_longwave_flux', }
-
-    def __init__(self, method='easygems_delaunay', zooms=range(11)[::-1], attrs=None, weights_path=WEIGHTS_PATH,
-                 tmpdir=TMPDIR):
+    def __init__(self, method='easygems_delaunay', zoom_level=10, add_cyclic=True, weights_path=WEIGHTS_PATH):
         """Initate a UM regridder for a particular method/zoom levels.
 
         Parameters:
-            method (str) : regridding method [easygems_delaunay, earth2grid]
-            zooms (list) : list of zoom levels (highest first)
+            method (str) : regridding method [easygems_delaunay, earth2grid].
+            zoom_level (int) : required healpix zoom level.
+            weights_path (pathlib.Path | str | None) : path to pre-computed weights (see gen_weights above).
         """
-        if attrs is None:
-            attrs = {}
         if method not in ['easygems_delaunay', 'earth2grid']:
             raise ValueError('method must be either easygems_delaunay or earth2grid')
         self.method = method
-        self.zooms = list(zooms)
-        self.attrs = attrs
-        self.max_zoom_level = zooms[0]
+        self.zoom_level = zoom_level
+        self.add_cyclic = add_cyclic
         self.weights_path = weights_path
         if method == 'easygems_delaunay':
             self.weights = xr.load_dataset(self.weights_path)
-        self.tmpdir = Path(tmpdir)
-
-    def run(self, inpath, outpath_tpl):
-        """Do end-to-end regridding, including converting to tmp .nc file on scratch
-        There will be one healpix .nc for every lat/lon .pp.
-        NOTE: This assumes one variable per .pp file.
-
-        Parameters:
-            inpath (str, Path) : path to input file
-            outpath_tpl (str, Path) : path template (with {zoom}) to output file
-        """
-        print(f'Run regridding: {inpath}')
-        print(f'-> {outpath_tpl} zooms={self.zooms}')
-        inpath = Path(inpath)
-        print('- convert .pp to .nc')
-        names_tmppaths = self._pp_to_nc(inpath)
-        try:
-            for varname, tmppath in names_tmppaths:
-                msg = f'Process variable: {varname}'
-                print('=' * len(msg))
-                print(msg)
-                print('=' * len(msg))
-
-                print('- load .nc')
-                da = self._load_da(tmppath, varname)
-                print(f'- do regrid using {self.method}')
-                regridded_data, dim_shape, dim_ranges = self.regrid(da)
-                print(f'- coarsen and save')
-                self._coarsen_and_save(da, regridded_data, outpath_tpl, dim_shape, dim_ranges, varname)
-        finally:
-            for _, tmppath in names_tmppaths:
-                tmppath.unlink()
-
-    def _pp_to_nc(self, inpath):
-        """Convert inpath (.pp) to .nc"""
-
-        # Stop annoying error message.
-        iris.FUTURE.save_split_attrs = True
-        # For some reason, loading .pp then saving as .nc using iris, then reloading with xarray
-        # is way faster.
-        cubes = iris.load(inpath)
-        names_tmppaths = []
-        print(f'  - found {len(cubes)} cube(s)')
-        print(f'    - {[c.name() for c in cubes]}')
-        for cube in cubes:
-            name = cube.name()
-            if name in self.VARNAMES_TO_PROCESS:
-                tmppath = self.tmpdir.joinpath(*inpath.parts[1:]).with_suffix(f'.{name}.nc')
-                tmppath.parent.mkdir(exist_ok=True, parents=True)
-                iris.save(cube, tmppath)
-                names_tmppaths.append((name, tmppath))
-        print(f'  - processing {len(names_tmppaths)} cube(s)')
-        print(f'    - {[n for n, p in names_tmppaths]}')
-        return names_tmppaths
-
-    @staticmethod
-    def _load_da(path, varname):
-        """Load the DataArray in varname from path"""
-        da = xr.open_dataset(path)[varname]
-        da.load()
-        return da
 
     def regrid(self, da, lonname, latname):
         """Do the regridding - set up common data to allow looping over all dims that are not lat/lon
 
         Parameters:
             da (xr.DataArray) : DataArray to be regridded
+            lonname (str): name of longitude coord.
+            latname (str): name of latitude coord.
+
+        Returns:
+            xr.DataArray : regridded data
         """
+        if self.add_cyclic:
+            da = _xr_add_cyclic_point(da, lonname)
         dsout_tpl = xr.Dataset(coords=da.copy().drop_vars([lonname, latname]).coords, attrs=da.attrs)
 
         # This is the shape of the dataset without lat/lon.
@@ -172,7 +153,7 @@ class UMHealpixRegridder:
         # These are the ranges - can be used to iter over an idx that selects out each individual lat/lon field for
         # any number of dims by passing to product as product(*dim_ranges).
         dim_ranges = [range(s) for s in dim_shape]
-        ncell = 12 * 4 ** self.max_zoom_level
+        ncell = 12 * 4 ** self.zoom_level
         regridded_data = np.zeros(dim_shape + [ncell])
         print(f'  - {dict(dsout_tpl.sizes)}')
         if self.method == 'easygems_delaunay':
@@ -181,20 +162,24 @@ class UMHealpixRegridder:
             self._regrid_earth2grid(da, dim_ranges, regridded_data, lonname, latname)
         reduced_dims = [d for d in da.dims if d not in [lonname, latname]]
         coords = {**dsout_tpl.coords, 'cell': np.arange(regridded_data.shape[-1])}
-        da = xr.DataArray(
+        daout = xr.DataArray(
             regridded_data,
             dims=reduced_dims + ['cell'],
             coords=coords,
             attrs=da.attrs,
         )
-        return da
-        # return regridded_data, dim_shape, dim_ranges
+        daout.attrs['grid_mapping'] = 'healpix_nested'
+        daout.attrs['healpix_zoom'] = self.zoom_level
+        daout.attrs['coarsened'] = False
+        daout.attrs['regrid_method'] = self.method
+        return daout
 
     def _regrid_easygems_delaunay(self, da, dim_ranges, regridded_data, lonname, latname):
         """Use precomputed weights file to do Delaunay regridding."""
         da_flat = da.stack(cell=(lonname, latname))
         for idx in product(*dim_ranges):
-            print(f'  - {idx}')
+            print(f'    - {idx}')
+            # TODO: speed up with xr.apply_ufunc...
             regridded_data[idx] = egr.apply_weights(da_flat[idx].values, **self.weights)
 
     def _regrid_earth2grid(self, da, dim_ranges, regridded_data, lonname, latname):
@@ -212,23 +197,34 @@ class UMHealpixRegridder:
         target_data = da.values[*data_slice].copy().astype(np.double)
 
         # Note, you pass in PixelOrder.NEST here. .XY() (as in example) is equivalent to .RING.
-        hpx = earth2grid.healpix.Grid(level=self.max_zoom_level, pixel_order=earth2grid.healpix.PixelOrder.NEST)
+        hpx = earth2grid.healpix.Grid(level=self.zoom_level, pixel_order=earth2grid.healpix.PixelOrder.NEST)
         regrid = earth2grid.get_regridder(src, hpx)
         for idx in product(*dim_ranges):
-            print(f'  - {idx}')
+            print(f'    - {idx}')
             z_torch = torch.as_tensor(target_data[idx])
             z_hpx = regrid(z_torch)
             # if idx == () this still works (i.e. does nothing to regridded_data).
             regridded_data[idx] = z_hpx.numpy()
 
-    def coarsen(self, da):
-        """Produce the all zoom level data by successively coarsening."""
-        dsout_tpl = xr.Dataset(coords=da.copy().drop_vars(['latitude', 'longitude']).coords, attrs=da.attrs)
+    @staticmethod
+    def coarsen(da, zooms=range(11)[::-1]):
+        """Produce xr.DataArrays at all zoom levels by successively coarsening.
+        Parameters:
+            da (xr.DataArray) : DataArray to be coarsened, assumed to have been created with .regrid.
+            zooms (list | range) : zooms to coarsen to - decreasing from max to min.
+
+        Returns:
+            Dict[xr.DataArray] : mapping of zoom to coarsened xr.DataArray.
+        """
+        zooms = list(zooms)
+        assert len(da['cell']) == 12 * 4**zooms[0], f'cell has wrong number of points for {zooms[0]}'
+
+        dsout_tpl = xr.Dataset(coords=da.copy().drop_vars(['cell']).coords, attrs=da.attrs)
         dim_shape = [v for v in dsout_tpl.sizes.values()]
         # These are the ranges - can be used to iter over an idx that selects out each individual lat/lon field for
         # any number of dims by passing to product as product(*dim_ranges).
         dim_ranges = [range(s) for s in dim_shape]
-        reduced_dims = [d for d in da.dims if d not in ['latitude', 'longitude']]
+        reduced_dims = [d for d in da.dims if d not in ['cell']]
 
         num_nans = np.isnan(da.values).sum()
         print(f'  - {num_nans} NaNs in {da.name}')
@@ -239,62 +235,27 @@ class UMHealpixRegridder:
 
         timename = [c for c in da.coords if c.startswith('time')][0]
         das = {}
-        for zoom in self.zooms:
-            if zoom == self.max_zoom_level:
+        for zoom in zooms:
+            if zoom == zooms[0]:
                 regridded_data = da.values
                 daout = da
             else:
-                coarse_regridded_data = np.zeros(dim_shape + [12 * 4 ** zoom])
+                print(f'  - coarsen to {zoom}')
+                coarse_regridded_data = np.zeros(dim_shape + [12 * 4**zoom])
                 for idx in product(*dim_ranges):
                     coarse_regridded_data[idx] = hp_coarsen(regridded_data[idx])
                 regridded_data = coarse_regridded_data
 
-                coords = {'time': timename, 'cell': np.arange(regridded_data.shape[-1])}
+                coords = {timename: da[timename], 'cell': np.arange(regridded_data.shape[1])}
                 daout = xr.DataArray(regridded_data, dims=reduced_dims + ['cell'], coords=coords, attrs=da.attrs)
                 daout.attrs['grid_mapping'] = 'healpix_nested'
                 daout.attrs['healpix_zoom'] = zoom
-            daout.attrs.update(self.attrs)
+                daout.attrs['coarsened'] = True
             das[zoom] = daout
         return das
 
 
-    def _coarsen_and_save(self, da, regridded_data, outpath_tpl, dim_shape, dim_ranges, varname):
-        """Produce the all zoom level data by successively coarsening and save."""
-        dsout_tpl = xr.Dataset(coords=da.copy().drop_vars(['latitude', 'longitude']).coords, attrs=da.attrs)
-        reduced_dims = [d for d in da.dims if d not in ['latitude', 'longitude']]
-
-        num_nans = np.isnan(da.values).sum()
-        print(f'  - {num_nans} NaNs in {varname}')
-        if num_nans:
-            coarsen = 'with_weights'
-        else:
-            coarsen = 'without_weights'
-
-        for zoom in self.zooms:
-            outpath = Path(str(outpath_tpl).format(zoom=zoom, varname=varname))
-            dsout = dsout_tpl.copy()
-            if zoom != self.max_zoom_level:
-                coarse_regridded_data = np.zeros(dim_shape + [12 * 4 ** zoom])
-                for idx in product(*dim_ranges):
-                    coarse_regridded_data[idx] = hp_coarsen(regridded_data[idx])
-                regridded_data = coarse_regridded_data
-
-            dsout[f'{varname}'] = xr.DataArray(regridded_data, dims=reduced_dims + ['cell'],
-                                               coords={'cell': np.arange(regridded_data.shape[-1])})
-            dsout.attrs['grid_mapping'] = 'healpix_nested'
-            dsout.attrs['healpix_zoom'] = zoom
-            dsout.attrs.update(self.attrs)
-
-            outpath.parent.mkdir(exist_ok=True, parents=True)
-            print(f'  - {outpath} {zoom}')
-            dsout.to_netcdf(outpath)
-
-
 def main():
-    """Entry point plus some examples. Super simple argument 'parsing' of command line args.
-
-    e.g. python convert_latlon_pp_to_hp_nc.py toa_outgoing_longwave_flux easygems_delaunay
-    """
     if len(sys.argv) == 2 and sys.argv[1] == 'gen_weights':
         inpath = Path('/gws/nopw/j04/hrcm/cache/torau/Lorenzo_u-cu087/OLR/20200101T0000Z_pa000.pp')
         cube = iris.load_cube(inpath)
@@ -302,28 +263,6 @@ def main():
 
         gen_weights(da, zoom=10)
         return
-
-    if not Path(WEIGHTS_PATH).exists():
-        # Might not be a problem depending on args.
-        print(f'WARNING: no weights have been generated: {WEIGHTS_PATH}')
-
-    if len(sys.argv) == 3 and sys.argv[1] == 'toa_outgoing_longwave_flux':
-        method = sys.argv[2]
-        inpath = Path('/gws/nopw/j04/hrcm/cache/torau/Lorenzo_u-cu087/OLR/20200101T0000Z_pa000.pp')
-        outpath_tpl = f'/work/scratch-nopw2/mmuetz/wcrp_hackathon/OLR/20200101T0000Z_pa000.{{varname}}.hpz{{zoom}}.{method}.nc'
-    elif len(sys.argv) == 3 and sys.argv[1] == 'air_temperature':
-        method = sys.argv[2]
-        inpath = '/gws/nopw/j04/hrcm/hackathon/3D/pe_T/20200101T0000Z_pe000.pp'
-        outpath_tpl = f'/work/scratch-nopw2/mmuetz/wcrp_hackathon/pe_T/20200101T0000Z_pe000.{{varname}}.hpz{{zoom}}.{method}.nc'
-    else:
-        inpath = sys.argv[1]
-        outpath_tpl = sys.argv[2]
-        method = sys.argv[3]
-
-    um_regridder = UMHealpixRegridder(method)
-    um_regridder.run(inpath, outpath_tpl)
-
-    return um_regridder
 
 
 if __name__ == '__main__':
