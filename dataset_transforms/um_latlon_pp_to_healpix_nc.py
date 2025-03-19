@@ -12,9 +12,9 @@ import iris
 import numpy as np
 import xarray as xr
 from cartopy.util import add_cyclic_point
+from loguru import logger
 
 WEIGHTS_PATH = '/gws/nopw/j04/hrcm/mmuetz/weights/regrid_weights_N2560_hpz10.nc'
-TMPDIR = '/work/scratch-nopw2/mmuetz/wcrp_hackathon/'
 
 
 def _xr_add_cyclic_point(da, lonname):
@@ -63,9 +63,10 @@ def gen_weights(da, zoom=10, lonname='longitude', latname='latitude', add_cyclic
 
     # Expand input domain by one in the lon dim.
     if add_cyclic:
-        print(da[lonname])
+        logger.debug('adding cyclinc column')
+        logger.trace(da[lonname])
         da = _xr_add_cyclic_point(da, lonname)
-        print(da[lonname])
+        logger.trace(da[lonname])
 
     hp_lon, hp_lat = hp.pix2ang(nside=nside, ipix=np.arange(npix), lonlat=True, nest=True)
 
@@ -78,10 +79,10 @@ def gen_weights(da, zoom=10, lonname='longitude', latname='latitude', add_cyclic
 
     da_flat = da.stack(cell=(lonname, latname))
 
-    print('computing weights')
+    logger.info('computing weights')
     weights = egr.compute_weights_delaunay((da_flat[lonname].values, da_flat[latname].values), (hp_lon, hp_lat))
     weights.to_netcdf(weights_path)
-    print(f'saved weights to {weights_path}')
+    logger.info(f'saved weights to {weights_path}')
 
 
 def hp_coarsen(data):
@@ -146,22 +147,23 @@ class UMLatLon2HealpixRegridder:
         """
         if self.add_cyclic:
             da = _xr_add_cyclic_point(da, lonname)
-        dsout_tpl = xr.Dataset(coords=da.copy().drop_vars([lonname, latname]).coords, attrs=da.attrs)
+        reduced_dims = [d for d in da.dims if d not in [lonname, latname]]
+        coords = {d: da[d] for d in reduced_dims}
 
         # This is the shape of the dataset without lat/lon.
-        dim_shape = [v for v in dsout_tpl.sizes.values()]
+        dim_shape = list(da.shape[:-2])
         # These are the ranges - can be used to iter over an idx that selects out each individual lat/lon field for
         # any number of dims by passing to product as product(*dim_ranges).
         dim_ranges = [range(s) for s in dim_shape]
         ncell = 12 * 4 ** self.zoom_level
         regridded_data = np.zeros(dim_shape + [ncell])
-        print(f'  - {dict(dsout_tpl.sizes)}')
+        dim_len = {c: len(da[c]) for c in coords.keys()}
+        logger.trace(f'  - {dim_len}')
         if self.method == 'easygems_delaunay':
             self._regrid_easygems_delaunay(da, dim_ranges, regridded_data, lonname, latname)
         elif self.method == 'earth2grid':
             self._regrid_earth2grid(da, dim_ranges, regridded_data, lonname, latname)
-        reduced_dims = [d for d in da.dims if d not in [lonname, latname]]
-        coords = {**dsout_tpl.coords, 'cell': np.arange(regridded_data.shape[-1])}
+        coords = {**coords, 'cell': np.arange(ncell)}
         daout = xr.DataArray(
             regridded_data,
             dims=reduced_dims + ['cell'],
@@ -178,7 +180,7 @@ class UMLatLon2HealpixRegridder:
         """Use precomputed weights file to do Delaunay regridding."""
         da_flat = da.stack(cell=(lonname, latname))
         for idx in product(*dim_ranges):
-            print(f'    - {idx}')
+            logger.trace(f'    - {idx}')
             # TODO: speed up with xr.apply_ufunc...
             regridded_data[idx] = egr.apply_weights(da_flat[idx].values, **self.weights)
 
@@ -200,7 +202,7 @@ class UMLatLon2HealpixRegridder:
         hpx = earth2grid.healpix.Grid(level=self.zoom_level, pixel_order=earth2grid.healpix.PixelOrder.NEST)
         regrid = earth2grid.get_regridder(src, hpx)
         for idx in product(*dim_ranges):
-            print(f'    - {idx}')
+            logger.trace(f'    - {idx}')
             z_torch = torch.as_tensor(target_data[idx])
             z_hpx = regrid(z_torch)
             # if idx == () this still works (i.e. does nothing to regridded_data).
@@ -217,17 +219,16 @@ class UMLatLon2HealpixRegridder:
             Dict[xr.DataArray] : mapping of zoom to coarsened xr.DataArray.
         """
         zooms = list(zooms)
-        assert len(da['cell']) == 12 * 4**zooms[0], f'cell has wrong number of points for {zooms[0]}'
+        assert len(da['cell']) == 12 * 4 ** zooms[0], f'cell has wrong number of points for {zooms[0]}'
 
-        dsout_tpl = xr.Dataset(coords=da.copy().drop_vars(['cell']).coords, attrs=da.attrs)
-        dim_shape = [v for v in dsout_tpl.sizes.values()]
+        dim_shape = list(da.shape[:-1])
         # These are the ranges - can be used to iter over an idx that selects out each individual lat/lon field for
         # any number of dims by passing to product as product(*dim_ranges).
         dim_ranges = [range(s) for s in dim_shape]
         reduced_dims = [d for d in da.dims if d not in ['cell']]
 
         num_nans = np.isnan(da.values).sum()
-        print(f'  - {num_nans} NaNs in {da.name}')
+        logger.debug(f'  - {num_nans} NaNs in {da.name}')
         if num_nans:
             coarsen = 'with_weights'
         else:
@@ -240,13 +241,16 @@ class UMLatLon2HealpixRegridder:
                 regridded_data = da.values
                 daout = da
             else:
-                print(f'  - coarsen to {zoom}')
-                coarse_regridded_data = np.zeros(dim_shape + [12 * 4**zoom])
+                logger.debug(f'  - coarsen to {zoom}')
+                coarse_regridded_data = np.zeros(dim_shape + [12 * 4 ** zoom])
                 for idx in product(*dim_ranges):
                     coarse_regridded_data[idx] = hp_coarsen(regridded_data[idx])
                 regridded_data = coarse_regridded_data
 
-                coords = {timename: da[timename], 'cell': np.arange(regridded_data.shape[1])}
+                # 2d only.
+                # coords = {timename: da[timename], 'cell': np.arange(regridded_data.shape[1])}
+                coords = {d: da.coords[d] for d in reduced_dims}
+                coords['cell'] = np.arange(regridded_data.shape[-1])
                 daout = xr.DataArray(regridded_data, dims=reduced_dims + ['cell'], coords=coords, attrs=da.attrs)
                 daout.attrs['grid_mapping'] = 'healpix_nested'
                 daout.attrs['healpix_zoom'] = zoom
