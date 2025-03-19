@@ -1,5 +1,5 @@
 """
-Contains a UMHealpixRegridder class that lets you convert from UM lat/lon .pp to .nc
+Contains a UMLatLon2HealpixRegridder class that lets you convert from UM lat/lon .pp to .nc
 Can be run as a command line script with args easy to see in main()
 """
 import sys
