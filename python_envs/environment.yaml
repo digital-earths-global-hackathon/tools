@@ -49,7 +49,7 @@ dependencies:
 - tqdm
 - types-pyyaml
 - uxarray
-- xarray>=2025.1.2
+- xarray==2025.1.2
 - xgcm
 - zarr<3.0.0
 - pip
