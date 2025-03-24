@@ -49,9 +49,9 @@ dependencies:
 - tqdm
 - types-pyyaml
 - uxarray
-- xarray<2025.3.0
+- xarray
 - xgcm
-- zarr<3.0.0
+- zarr
 - pip
 - pip:
   - gribscan
