@@ -35,6 +35,7 @@ dependencies:
 - odc-stac
 - opencv
 - pandas
+- pyflextrkr
 - pystac
 - pytest
 - requests
@@ -45,6 +46,7 @@ dependencies:
 - seaborn
 - sh
 - spectrum
+- tobac
 - tokenizers
 - tqdm
 - types-pyyaml
