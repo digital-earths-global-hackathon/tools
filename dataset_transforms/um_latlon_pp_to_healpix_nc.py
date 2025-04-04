@@ -6,6 +6,7 @@ import sys
 from itertools import product
 from pathlib import Path
 
+import easygems.healpix as egh
 import easygems.remap as egr
 import healpix as hp
 import iris
@@ -34,7 +35,43 @@ def _xr_add_cyclic_point(da, lonname):
     return daout
 
 
-def gen_weights(da, zoom=10, lonname='longitude', latname='latitude', add_cyclic=True, weights_path=WEIGHTS_PATH):
+def get_limited_healpix(extent, zoom, chunksize):
+    # https://gitlab.dkrz.de/-/snippets/81
+    icell = get_regional_cell_idx(extent, zoom)
+    ichunk = egh.get_full_chunks(icell, chunksize=chunksize)
+    nside = hp.order2nside(zoom)
+    npix = hp.nside2npix(nside)
+    hp_lon, hp_lat = hp.pix2ang(nside, np.arange(npix), nest=True, lonlat=True)
+
+    return hp_lon[ichunk], hp_lat[ichunk], ichunk
+
+
+def get_extent(da):
+    lonname = [c for c in da.coords if c.startswith('longitude')][0]
+    latname = [c for c in da.coords if c.startswith('latitude')][0]
+    minlon, maxlon = da[lonname].values[[0, -1]]
+    minlat, maxlat = da[latname].values[[0, -1]]
+    return minlon, maxlon, minlat, maxlat
+
+
+def get_regional_cell_idx(extent, zoom):
+    nside = hp.order2nside(zoom)
+    npix = hp.nside2npix(nside)
+    hp_lon, hp_lat = hp.pix2ang(nside, np.arange(npix), nest=True, lonlat=True)
+    hp_lon = hp_lon % 360
+    # hp_lon = (hp_lon + 180) % 360 - 180
+
+    icell, = np.where(
+        (hp_lon > extent[0]) &
+        (hp_lon < extent[1]) &
+        (hp_lat > extent[2]) &
+        (hp_lat < extent[3])
+    )
+    return icell
+
+
+def gen_weights(da, zoom=10, lonname='longitude', latname='latitude', add_cyclic=True, weights_path=WEIGHTS_PATH,
+                regional=False, regional_chunks=None):
     """Generate delaunay weights for regridding.
 
     Can use quite a lot of RAM: 30-40G for a UM N2560 conversion.
@@ -63,12 +100,17 @@ def gen_weights(da, zoom=10, lonname='longitude', latname='latitude', add_cyclic
 
     # Expand input domain by one in the lon dim.
     if add_cyclic:
-        logger.debug('adding cyclinc column')
+        logger.debug('adding cyclin column')
         logger.trace(da[lonname])
         da = _xr_add_cyclic_point(da, lonname)
         logger.trace(da[lonname])
 
     hp_lon, hp_lat = hp.pix2ang(nside=nside, ipix=np.arange(npix), lonlat=True, nest=True)
+    if regional:
+        # TODO: or ichunk?
+        icell = get_regional_cell_idx(get_extent(da), zoom)
+        hp_lon = hp_lon[icell]
+        hp_lat = hp_lat[icell]
 
     # TODO: is this necessary for the UM?
     # This was in code that I copied the function from but I think I can leave it out.
@@ -81,6 +123,7 @@ def gen_weights(da, zoom=10, lonname='longitude', latname='latitude', add_cyclic
 
     logger.info('computing weights')
     weights = egr.compute_weights_delaunay((da_flat[lonname].values, da_flat[latname].values), (hp_lon, hp_lat))
+    logger.debug(weights)
     weights.to_netcdf(weights_path)
     logger.info(f'saved weights to {weights_path}')
 
@@ -117,7 +160,8 @@ def hp_coarsen_with_weights(data, nan_weights=None):
 class UMLatLon2HealpixRegridder:
     """Regrid UM lat/lon .pp files to healpix .nc"""
 
-    def __init__(self, method='easygems_delaunay', zoom_level=10, add_cyclic=True, weights_path=WEIGHTS_PATH):
+    def __init__(self, method='easygems_delaunay', zoom_level=10, add_cyclic=True, weights_path=WEIGHTS_PATH,
+                 regional=False, regional_chunks=None):
         """Initate a UM regridder for a particular method/zoom levels.
 
         Parameters:
@@ -131,6 +175,9 @@ class UMLatLon2HealpixRegridder:
         self.zoom_level = zoom_level
         self.add_cyclic = add_cyclic
         self.weights_path = weights_path
+        self.regional = regional
+        if self.regional:
+            self.regional_chunks = regional_chunks
         if method == 'easygems_delaunay':
             self.weights = xr.load_dataset(self.weights_path)
 
@@ -155,7 +202,13 @@ class UMLatLon2HealpixRegridder:
         # These are the ranges - can be used to iter over an idx that selects out each individual lat/lon field for
         # any number of dims by passing to product as product(*dim_ranges).
         dim_ranges = [range(s) for s in dim_shape]
-        ncell = 12 * 4 ** self.zoom_level
+        if self.regional:
+            _, _, ichunk = get_limited_healpix(get_extent(da), self.zoom_level, self.regional_chunks)
+            cells = ichunk
+            ncell = len(ichunk)
+        else:
+            ncell = 12 * 4 ** self.zoom_level
+            cells = np.arange(ncell)
         regridded_data = np.zeros(dim_shape + [ncell])
         dim_len = {c: len(da[c]) for c in coords.keys()}
         logger.trace(f'  - {dim_len}')
@@ -163,7 +216,7 @@ class UMLatLon2HealpixRegridder:
             self._regrid_easygems_delaunay(da, dim_ranges, regridded_data, lonname, latname)
         elif self.method == 'earth2grid':
             self._regrid_earth2grid(da, dim_ranges, regridded_data, lonname, latname)
-        coords = {**coords, 'cell': np.arange(ncell)}
+        coords = {**coords, 'cell': cells}
         daout = xr.DataArray(
             regridded_data,
             dims=reduced_dims + ['cell'],
@@ -176,13 +229,30 @@ class UMLatLon2HealpixRegridder:
         daout.attrs['regrid_method'] = self.method
         return daout
 
-    def _regrid_easygems_delaunay(self, da, dim_ranges, regridded_data, lonname, latname):
+    def _regrid_easygems_delaunay(self, da, dim_ranges, regridded_data, lonname, latname, regional=False):
         """Use precomputed weights file to do Delaunay regridding."""
         da_flat = da.stack(cell=(lonname, latname))
+        if self.regional:
+            icell = get_regional_cell_idx(get_extent(da), self.zoom_level)
+            _, _, ichunk = get_limited_healpix(get_extent(da), self.zoom_level, self.regional_chunks)
+            field = np.full(12 * 4 ** self.zoom_level, np.nan, np.float32)
+        else:
+            icell = ichunk = field = None
+
         for idx in product(*dim_ranges):
             logger.trace(f'    - {idx}')
-            # TODO: speed up with xr.apply_ufunc...
-            regridded_data[idx] = egr.apply_weights(da_flat[idx].values, **self.weights)
+            if self.regional:
+                # This is a bit complicated.
+                # icell: valid cells (not nan) based on extent
+                # ichunk: valid cells based on extent and chunk.
+                # both index a full field. Use this fact to convert between them.
+                # We can get away with only allocating field once.
+                # !!! NOTE: MASSIVELY FASTER IF I PASS IN .values !!!
+                field[icell] = egr.apply_weights(da_flat[idx].values, **self.weights)
+                regridded_data[idx] = field[ichunk]
+                # raise Exception()
+            else:
+                regridded_data[idx] = egr.apply_weights(da_flat[idx], **self.weights)
 
     def _regrid_earth2grid(self, da, dim_ranges, regridded_data, lonname, latname):
         """Use earth2grid (which uses torch) to do regridding."""
