@@ -37,11 +37,8 @@ def _xr_add_cyclic_point(da, lonname):
 
 def get_limited_healpix(extent, zoom, chunksize):
     # https://gitlab.dkrz.de/-/snippets/81
-    icell = get_regional_cell_idx(extent, zoom)
+    hp_lon, hp_lat, icell = get_regional_cell_idx(extent, zoom)
     ichunk = egh.get_full_chunks(icell, chunksize=chunksize)
-    nside = hp.order2nside(zoom)
-    npix = hp.nside2npix(nside)
-    hp_lon, hp_lat = hp.pix2ang(nside, np.arange(npix), nest=True, lonlat=True)
 
     return hp_lon[ichunk], hp_lat[ichunk], ichunk
 
@@ -59,6 +56,9 @@ def get_regional_cell_idx(extent, zoom):
     npix = hp.nside2npix(nside)
     hp_lon, hp_lat = hp.pix2ang(nside, np.arange(npix), nest=True, lonlat=True)
     hp_lon = hp_lon % 360
+    if extent[1] > 360:
+        # The Africa regional domain has extent[1] == max lon = 415.
+        hp_lon = np.where(hp_lon <= extent[1] - 360, hp_lon + 360, hp_lon)
     # hp_lon = (hp_lon + 180) % 360 - 180
 
     icell, = np.where(
@@ -67,7 +67,7 @@ def get_regional_cell_idx(extent, zoom):
         (hp_lat > extent[2]) &
         (hp_lat < extent[3])
     )
-    return icell
+    return hp_lon, hp_lat, icell
 
 
 def gen_weights(da, zoom=10, lonname='longitude', latname='latitude', add_cyclic=True, weights_path=WEIGHTS_PATH,
@@ -108,16 +108,16 @@ def gen_weights(da, zoom=10, lonname='longitude', latname='latitude', add_cyclic
     hp_lon, hp_lat = hp.pix2ang(nside=nside, ipix=np.arange(npix), lonlat=True, nest=True)
     if regional:
         # TODO: or ichunk?
-        icell = get_regional_cell_idx(get_extent(da), zoom)
+        hp_lon, hp_lat, icell = get_regional_cell_idx(get_extent(da), zoom)
         hp_lon = hp_lon[icell]
         hp_lat = hp_lat[icell]
-
-    # TODO: is this necessary for the UM?
-    # This was in code that I copied the function from but I think I can leave it out.
-    # hp_lon += 360 / (4 * nside) / 4  # shift quarter-width
-    hp_lon = hp_lon % 360  # [0, 360)
-    # Apply a 360 degree offset. This ensures that all hp_lon are within da[lonname].
-    hp_lon[hp_lon == 0] = 360
+    else:
+        # TODO: is this necessary for the UM?
+        # This was in code that I copied the function from but I think I can leave it out.
+        # hp_lon += 360 / (4 * nside) / 4  # shift quarter-width
+        hp_lon = hp_lon % 360  # [0, 360)
+        # Apply a 360 degree offset. This ensures that all hp_lon are within da[lonname].
+        hp_lon[hp_lon == 0] = 360
 
     da_flat = da.stack(cell=(lonname, latname))
 
@@ -233,7 +233,7 @@ class UMLatLon2HealpixRegridder:
         """Use precomputed weights file to do Delaunay regridding."""
         da_flat = da.stack(cell=(lonname, latname))
         if self.regional:
-            icell = get_regional_cell_idx(get_extent(da), self.zoom_level)
+            _, _, icell = get_regional_cell_idx(get_extent(da), self.zoom_level)
             _, _, ichunk = get_limited_healpix(get_extent(da), self.zoom_level, self.regional_chunks)
             field = np.full(12 * 4 ** self.zoom_level, np.nan, np.float32)
         else:
