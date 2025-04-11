@@ -54,10 +54,8 @@ def compute_chunksize(order):
     start_split = 8
     if order < start_split:
         return 12 * 4**order
-    elif order == start_split:
-        return 4 * 4**order
     else:
-        return 4**start_split + 1
+        return 4 ** (start_split + 1)
 
 
 def isPrime(number):
