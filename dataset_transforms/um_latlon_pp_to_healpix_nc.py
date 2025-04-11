@@ -29,6 +29,7 @@ def _xr_add_cyclic_point(da, lonname):
 
     # Generate output DataArray with new data but same structure as input
     daout = xr.DataArray(data=wrap_data,
+                         name=da.name,
                          coords=coords,
                          dims=da.dims,
                          attrs=da.attrs)
@@ -219,13 +220,14 @@ class UMLatLon2HealpixRegridder:
         coords = {**coords, 'cell': cells}
         daout = xr.DataArray(
             regridded_data,
+            name=da.name,
             dims=reduced_dims + ['cell'],
             coords=coords,
             attrs=da.attrs,
         )
         daout.attrs['grid_mapping'] = 'healpix_nested'
         daout.attrs['healpix_zoom'] = self.zoom_level
-        daout.attrs['coarsened'] = False
+        daout.attrs['coarsened'] = 'False'
         daout.attrs['regrid_method'] = self.method
         return daout
 
@@ -252,7 +254,7 @@ class UMLatLon2HealpixRegridder:
                 regridded_data[idx] = field[ichunk]
                 # raise Exception()
             else:
-                regridded_data[idx] = egr.apply_weights(da_flat[idx], **self.weights)
+                regridded_data[idx] = egr.apply_weights(da_flat[idx].values, **self.weights)
 
     def _regrid_earth2grid(self, da, dim_ranges, regridded_data, lonname, latname):
         """Use earth2grid (which uses torch) to do regridding."""
