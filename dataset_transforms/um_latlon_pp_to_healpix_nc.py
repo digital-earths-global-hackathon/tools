@@ -101,7 +101,7 @@ def gen_weights(da, zoom=10, lonname='longitude', latname='latitude', add_cyclic
 
     # Expand input domain by one in the lon dim.
     if add_cyclic:
-        logger.debug('adding cyclin column')
+        logger.debug('adding cyclic column')
         logger.trace(da[lonname])
         da = _xr_add_cyclic_point(da, lonname)
         logger.trace(da[lonname])
