@@ -19,7 +19,7 @@ Use the following options:
 - **Choose**: `n` to create a new remote.
 - **Enter a name, e.g.**: `hackathon`
 - **Choose storage type**: `s3` (option 4)
-- **Enter provider**: choose `Other` (option 14)
+- **Enter provider**: choose `Other` (option 34)
 - **Env_auth**: `false`
 - **Access_key_id**: leave blank since it's public
 - **Secret_access_key**: leave blank since it's public
