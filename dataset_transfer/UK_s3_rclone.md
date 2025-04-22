@@ -59,6 +59,10 @@ You can create a bash script to loop through all available transfers:
 ```bash
 #!/bin/bash
 
+set -evxu
+
+target_dir=/path/to/directory # YOU WILL NEED TO ADJUST THIS!
+
 sims=(
     # glm.n1280_CoMA9  # currently has no zarr store.
     glm.n2560_RAL3p3
@@ -75,7 +79,8 @@ sims=(
 freqs=(PT1H PT3H)
 zooms=({1..10})
 
-cd /path/to/directory/
+mkdir -p ${target_dir}
+cd ${target_dir}
 
 for sim in "${sims[@]}"; do
     for freq in "${freqs[@]}"; do
