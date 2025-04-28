@@ -59,7 +59,7 @@ You can create a bash script to loop through all available transfers:
 ```bash
 #!/bin/bash
 
-set -evxu
+set -evu
 
 target_dir=/path/to/directory # YOU WILL NEED TO ADJUST THIS!
 
@@ -70,17 +70,18 @@ zooms=({0..9})
 
 mkdir -p ${target_dir}/ICON/${sim}.zarr
 
+# extract all groups via metadata
 groups=( $(rclone cat dkrz:wrcp-hackathon/data/ICON/${sim}.zarr/.zmetadata | jq -r '.metadata|keys[]|select(endswith(".zgroup"))|.[:-8]') )
+
 for freq in "${freqs[@]}"; do
     for method in ${methods[@]}; do
         for zoom in "${zooms[@]}"; do
             if [[ ! ${groups[@]} =~ "${freq}_${method}_z${zoom}_atm" ]]; then 
-                echo skipping  ${freq}.${method}.${zoom}
+                echo skipping  ${freq}.${method}.${zoom} for it is not present on the dataset
                 continue
             fi
-            echo rclone sync dkrz:wrcp-hackathon/data/ICON/${sim}.zarr/${freq}_${method}_z${zoom}_atm ${target_dir}/${sim}.zarr/${freq}_${method}_z${zoom}_atm --progress --transfers=40 --multi-thread-streams=10 --checkers=100
+            rclone sync dkrz:wrcp-hackathon/data/ICON/${sim}.zarr/${freq}_${method}_z${zoom}_atm ${target_dir}/ICON/${sim}.zarr/${freq}_${method}_z${zoom}_atm --progress --transfers=40 --multi-thread-streams=10 --checkers=100
        done
     done
 done
-
-
+```
