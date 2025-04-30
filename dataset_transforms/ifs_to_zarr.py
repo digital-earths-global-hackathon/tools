@@ -5,6 +5,8 @@ import multiprocessing
 import warnings
 from tqdm.contrib.concurrent import process_map
 from numcodecs import Blosc
+from tempfile import TemporaryDirectory
+import math
 
 warnings.filterwarnings(
     "ignore", "Found an empty list of filters in the array metadata document."
@@ -36,26 +38,29 @@ def simple_remap(slice_to_process, in_vars, out_var, op=None):
 
 
 def double_remap(slice_to_process, in_vars, out_var, op):
-    zippath = temp_path+f"/tmp_{multiprocessing.current_process().pid}.zarr.zip"
-    temp_zarr = zarr.open(zarr.storage.ZipStore(zippath, mode="w", compression=0), mode="w", zarr_version=2)
-    # only rechunk last dimension first
-    temp_chunks = (*in_vars[0].chunks[:-1], out_var.chunks[-1]*4**2)
-    temp_var = gen_array(temp_zarr, in_vars[0], temp_chunks,
-                         compressor=Blosc(cname='lz4', clevel=1, shuffle=0))
-    for sl in iter_slices(slice_to_process, tuple_max(*(v.chunks for v in in_vars), temp_chunks)):
-        simple_remap(sl, in_vars, temp_var, op)
-    for sl in iter_slices(slice_to_process, tuple_max(temp_chunks, out_var.chunks)):
-        simple_remap(sl, [temp_var], out_var)
+    with TemporaryDirectory(dir=temp_path, suffix=".zarr") as tmpdir:
+        temp_zarr = zarr.open(tmpdir, mode="w", zarr_version=2)
+        # only rechunk last dimension first
+        temp_chunks = (*in_vars[0].chunks[:-1], max(in_vars[0].chunks[-1]//64, out_var.chunks[-1]))
+        temp_var = gen_array(temp_zarr, in_vars[0], temp_chunks,
+                             compressor=Blosc(cname='lz4', clevel=1, shuffle=0))
+        for sl in iter_slices(slice_to_process, tuple_max(*(v.chunks for v in in_vars), temp_chunks)):
+            simple_remap(sl, in_vars, temp_var, op)
+        for sl in iter_slices(slice_to_process, tuple_max(temp_chunks, out_var.chunks)):
+            simple_remap(sl, [temp_var], out_var)
 
 
 def remap(t):
-    slice_to_process, in_vars, out_var, op = t
-    op = cloudpickle.loads(op)
-    if len(slice_to_process) >= 3:
-        _remap = double_remap
-    else:
-        _remap = simple_remap
-    _remap(slice_to_process, in_vars, out_var, op)
+    try:
+        slice_to_process, in_vars, out_var, op = t
+        op = cloudpickle.loads(op)
+        if len(in_vars)*tuple_size(slice_to_process) > 1e9:
+            _remap = double_remap
+        else:
+            _remap = simple_remap
+        _remap(slice_to_process, in_vars, out_var, op)
+    except Exception as e:
+        warnings.warn("Failed: " + out_var.basename+": " + str(e))
 
 
 def iter_slices(to_go, chunks, current=()):
@@ -77,7 +82,13 @@ def tuple_max(*tuples):
     return tuple(max(dims) for dims in zip(*tuples))
 
 
-def rechunk_dataset(zarr_in, zarr_out, chunks_per_dim, variables):
+def tuple_size(t):
+    return math.prod(stop-start for start, stop, _ in
+                     (sl.indices(sl.stop) for sl in t))
+
+
+def rechunk_dataset(zarr_in, zarr_out, chunks_per_dim, variables,
+                    nprocs=64):
     for varname_out, op in variables.items():
         if type(op) is str:
             vars_in = [zarr_in[op]]
@@ -94,8 +105,11 @@ def rechunk_dataset(zarr_in, zarr_out, chunks_per_dim, variables):
         op_pickle = cloudpickle.dumps(op)
         todo_list = [
             (slic, vars_in, var_out, op_pickle)
-            for slic in iter_slices(whole_slice, tuple_max(chunks, *(v.chunks for v in vars_in)))
+            for slic in iter_slices(whole_slice,
+                                    tuple_max(chunks,
+                                              *(v.chunks for v in vars_in))
+                                    )
         ]
         process_map(remap,
                     todo_list,
-                    max_workers=32)
+                    max_workers=nprocs)
