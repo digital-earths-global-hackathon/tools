@@ -17,6 +17,7 @@ dependencies:
 - h5netcdf
 - hdf5plugin
 - healpix
+- healpy
 - hvplot
 - intake==0.7.0
 - intake-esm
