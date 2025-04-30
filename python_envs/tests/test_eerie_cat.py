@@ -1,6 +1,8 @@
 import intake
+import pytest
 
 
+@pytest.mark.skip
 def test_eerie_cat():
     baseurl = "https://eerie.cloud.dkrz.de/datasets"
     dataset = "ifs-amip-tco1279.hist.v20240901.atmos.native.2D_24h"
