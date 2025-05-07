@@ -54,7 +54,7 @@ You can create a bash script to loop through all available transfers:
 set -e  # Exit on any error
 set -u  # Treat unset variables as an error
 
-RCLONE_CONFIG="./rclone.conf.nicam"
+RCLONE_CONFIG="$(pwd)/rclone.conf.nicam"
 
 # Check if rclone config file exists
 if [ ! -f "$RCLONE_CONFIG" ]; then
@@ -72,21 +72,28 @@ zooms=({0..9})
 
 # Create local output directory
 mkdir -p "${LOCAL_DIR}"
-
+cd "${LOCAL_DIR}"
 # Generate filenames using combinations of modes and zoom levels
 for dim in "${dims[@]}"; do
     for freq in "${freqs[@]}"; do
         for zoom in "${zooms[@]}"; do
             filename="NICAM_${dim}${freq}_z${zoom}.zarr"
             remote_path="${REMOTE}:${REMOTE_PATH}${filename}/"
-            local_path="${LOCAL_DIR}/${filename}"
 
             echo "Checking $remote_path..."
-
+            server=https://nowake.nicam.jp/files
             # Check if the remote directory exists (requires accessible structure in HTTP listing)
             if rclone --config "$RCLONE_CONFIG" lsf "$remote_path" >/dev/null 2>&1; then
                 echo "Syncing $filename ..."
-                rclone --config "$RCLONE_CONFIG" sync "$remote_path" "$local_path" --progress --transfers=40 --multi-thread-streams=10 --checkers=100
+                rclone --config "$RCLONE_CONFIG" sync "$remote_path" "$filename" --progress --transfers=40 --multi-thread-streams=10 --checkers=100
+                for dotfile in .zmetadata .zgroup .zattrs ; do
+                curl -s ${server}/${REMOTE_PATH}${filename}/${dotfile} -o ${filename}/${dotfile} &
+                done 
+                for ld in ${filename}/*/ ; do 
+                    for dotfile in .zarray .zattrs ; do
+                    curl -s ${server}/${REMOTE_PATH}${ld}${dotfile} -o ${ld}${dotfile}& 
+                    done
+                done    
             else
                 echo "Skipping $filename (not found)"
             fi
