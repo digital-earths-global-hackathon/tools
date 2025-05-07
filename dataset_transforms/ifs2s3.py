@@ -291,5 +291,11 @@ if args.freq == "monthly":
     rechunk_dataset(zarr_in, zarr_out, chunks_per_dim, variables, args.nprocs)
 
 
+# rename dimension `value` -> `cell`
+for vname, var in zarr_out.arrays():
+    ad = var.attrs["_ARRAY_DIMENSIONS"]
+    var.attrs["_ARRAY_DIMENSIONS"] = [d if d != "value" else "cell"
+                                      for d in ad]
+
 # finally consolidate the dataset
 zarr.consolidate_metadata(zarr_out.store)
