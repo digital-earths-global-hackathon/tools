@@ -49,8 +49,8 @@ if args.freq == "hourly":
 
     variables2d = filter_vardict({
         "time": "time",
-        #"lon": "lon",
-        #"lat": "lat",
+        "lon": "lon",
+        "lat": "lat",
         "rlut": lambda ttr: ttr / -3600,  # 0 - net
         "rsut": lambda tisr, tsr: (tisr - tsr) / 3600,  # incoming - net, for W/m2
         "pr": lambda tp: tp * (1000 / 3600),  # pr: kg m-2 s-1
@@ -59,8 +59,8 @@ if args.freq == "hourly":
         "uas": "10u",
         "vas": "10v",
         "tas": "2t",
-        "clwvi": "tclw",
         "clivi": "tciw",
+        "clwvi": "tclw",
         "hflsd": lambda slhf: slhf / 3600,  # we checked sign
         "hfssd": lambda sshf: sshf / 3600,
         "rlutcs": lambda ttrc: ttrc / -3600,
@@ -79,7 +79,7 @@ if args.freq == "hourly":
         "tauv": lambda nsss: nsss / 3600,
         "clt": "tcc",
         "swe": lambda sd: sd * 1000,
-        "mrso": lambda swvl1, swvl2, swvl3, swvl4: swvl1 + swvl2 + swvl3 + swvl4,  # change unit still
+        "mrso": lambda swvl1, swvl2, swvl3, swvl4: (7 * swvl1 + 21 * swvl2 + 72 * swvl3 + 189 * swvl4) / (7+21+72+189),
         "siconc": "ci",
         "10si": "10si",
         "2d": "2d",
@@ -124,20 +124,20 @@ if args.freq == "hourly":
 
     variables3d = filter_vardict({
         "level": "level",
-        "geopotential_height": "z",
-        "eastward_wind": "u",
-        "northward_wind": "v",
+        "zg": "z",
+        "ua": "u",
+        "va": "v",
         "wa" : "w",  # , and for wap it is var120
-        "temperature" : "t",
-        "relative_humidity": "r",
-        "specific_humidity": "q",
-        "mass_fraction_hydrometeors": lambda crwc, cswc, ciwc, clwc: crwc + cswc + ciwc + clwc,
-        "mass_fraction_liquid": "clwc",
-        "mass_fraction_ice": "ciwc",
-        "mass_fraction_rain": "crwc",
-        "mass_fraction_snow": "cswc",
-        "cloud_cover": "cc",
-        "potential_vorticity": "pv",
+        "ta" : "t",
+        "hur": "r",
+        "hus": "q",
+        "qall": lambda crwc, cswc, ciwc, clwc: crwc + cswc + ciwc + clwc,
+        "clwc": "clwc",
+        "ciwc": "ciwc",
+        "crwc": "crwc",
+        "cswc": "cswc",
+        "cc": "cc",
+        "pv": "pv",
     })
 
     ## Do we need to rename the following variables?
