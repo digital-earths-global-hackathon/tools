@@ -31,6 +31,7 @@ def create_store(path):
 def write_parts(outds: xr.Dataset, path: Path, time_chunk: int):
     status_filename, start = check_for_status(path)
     outds = handle_timeless_variables(outds, path, start)
+    outds = handle_time(outds, path, start)
     handle_time_dependent_variables(outds, path, time_chunk, status_filename, start)
 
 
@@ -48,9 +49,21 @@ def check_for_status(path):
     return status_filename, start
 
 
+def handle_time(outds, path, start):
+    logger.debug(f"processing time")
+    if start == 0:
+        wds = xr.Dataset(dict (time=outds.time.chunk(len(outds.time))))
+        wds.to_zarr(path, mode="r+")
+
+    drop = ["time"]
+    logger.debug(f" Dropping {drop}")
+    outds = outds.drop_vars(drop)
+    return outds
+
+
 def handle_timeless_variables(outds, path, start):
     timeless = {x: outds[x] for x in outds.variables if "time" not in outds[x].dims}
-    logger.debug(f"{list(timeless)=}")
+    logger.debug(f"processing timeless variables: {list(timeless)=}")
     if start == 0:
         wds = xr.Dataset(timeless)
         wds.to_zarr(path, mode="r+")

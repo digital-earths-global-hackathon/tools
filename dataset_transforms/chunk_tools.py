@@ -37,7 +37,7 @@ def get_chunksizes(outds, var, order, timechunk):
     timechunk = min(timechunk, var_shape[0])
     spacechunk = compute_chunksize(order=order)
     if len(var_shape) == 1:
-        return min(var_shape[0], 1024**2)
+        return (min(var_shape[0], 1024**2),)
     elif len(var_shape) == 2:
         chunksizes = (timechunk, spacechunk)
         return chunksizes
