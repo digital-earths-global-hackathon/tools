@@ -44,7 +44,7 @@ def get_chunksizes(outds, var, order, timechunk):
         chunksizes = (timechunk, spacechunk)
         return chunksizes
     elif len(var_shape) == 3:
-        chunksizes = (timechunk, 5, spacechunk)
+        chunksizes = (timechunk, 5, spacechunk // 4)
         return chunksizes
     else:
         raise Exception(
