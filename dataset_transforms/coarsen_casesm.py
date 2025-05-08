@@ -17,15 +17,19 @@ cat = intake.open_catalog("/public/home/florain/catalog/CN/main.yaml")
 # %%
 
 
-def rechunk_dataset(name, params, zoom_in, outfile):
+def rechunk_dataset(name:str, params, zoom_in:int, outfile:Path):
+    logger.info (f"starting to process {name} with parameters {params} and {zoom_in=}")
+    logger.info(f"Output is going to '{outfile}'")
+    outfile = Path (outfile)
     read_chunk_size = chunk_tools.compute_chunksize(zoom_in - 1) * 4
     time_chunk = 16*4**10//read_chunk_size
     logger.info (f" {time_chunk=}")
     in_ds = cat[name](**params, zoom=zoom_in, chunks = dict (cell=read_chunk_size, time=time_chunk, lev=5)).to_dask()
     out_ds = in_ds.coarsen(cell=4).mean()
     logger.info (f" {out_ds=}")
-    zarr_tools.create_zarr_structure(Path(outfile), out_ds, time_chunk, order=zoom_in-1)
-    zarr_tools.write_parts(out_ds, Path(outfile), time_chunk*4)
+    if not outfile.exists():
+        zarr_tools.create_zarr_structure(outfile, out_ds, time_chunk, order=zoom_in-1)
+    zarr_tools.write_parts(out_ds, outfile, time_chunk*8)
     return out_ds
 
 
@@ -36,8 +40,10 @@ dims = {'PT3H': '2d', 'PT1H': '2d', 'PT6H': '3d'}
 for ct, ft in time_map.items():
     # outfile=Path(f"/scratch/k/k207030/CAS_ESM_coarsened_{zoom_in-1}.zarr")
     outfile=Path(f"/data2/share/florain/CAS-ESM2_10km_cumulus_{dims[ct]}{ft}_z{zoom_in-1}.zarr")
-
-    out_ds = rechunk_dataset(name="CASESM2_cumulus", params=dict(time=ct), zoom_in=zoom_in, outfile=outfile)
+    try:
+        out_ds = rechunk_dataset(name="CASESM2_cumulus", params=dict(time=ct), zoom_in=zoom_in, outfile=outfile)
+    except Exception as e:
+        logger.error(f"Failed to process {name} with parameters {params}: {e}")
 
 # %%
 chunk_tools.get_chunksizes(out_ds, 'time', order=9, timechunk=16)
