@@ -11,9 +11,7 @@ logger.setLevel(logging.DEBUG)
 
 def create_zarr_structure(path, outds, timechunk, order):
     store = create_store(path)
-    encoding = chunk_tools.get_encodings(
-            outds=outds, timechunk=timechunk, order=order
-        )
+    encoding = chunk_tools.get_encodings(outds=outds, timechunk=timechunk, order=order)
     logger.debug(f"{encoding=}")
     outds.to_zarr(
         store,
@@ -54,9 +52,9 @@ def check_for_status(path):
 
 
 def handle_time(outds, path, start):
-    logger.debug(f"processing time")
+    logger.debug("processing time")
     if start == 0:
-        wds = xr.Dataset(dict (time=outds.time.chunk(len(outds.time))))
+        wds = xr.Dataset(dict(time=outds.time.chunk(len(outds.time))))
         wds.to_zarr(path, mode="r+")
 
     drop = ["time"]
@@ -80,7 +78,7 @@ def handle_timeless_variables(outds, path, start):
 
 def handle_time_dependent_variables(outds, path, time_chunk, status_filename, start):
     for i in range(start, len(outds.time), time_chunk):
-        tslice = slice(i, i + time_chunk)
+        tslice = slice(i, min(i + time_chunk, len(outds.time)))
         for var_name in outds:
             write_variable_chunk(outds, var_name, path, tslice)
         with open(status_filename, mode="w") as status:
