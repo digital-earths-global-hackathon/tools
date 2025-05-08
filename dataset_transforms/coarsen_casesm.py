@@ -12,7 +12,7 @@ import logging
 logging.basicConfig()
 logger = logging.getLogger("coarsen_casesm")
 logger.setLevel(logging.DEBUG)
-cat = intake.open_catalog("/home/k/k207030/catalog/EU/main.yaml")
+cat = intake.open_catalog("/public/home/florain/catalog/CN/main.yaml")
 
 # %%
 
@@ -31,8 +31,13 @@ def rechunk_dataset(name, params, zoom_in, outfile):
 
 # %%
 zoom_in=9
-outfile=Path(f"/scratch/k/k207030/CAS_ESM_coarsened_{zoom_in-1}.zarr")
-out_ds = rechunk_dataset(name="CASESM2_10km", params={}, zoom_in=zoom_in, outfile=outfile)
+time_map = {'PT3H': '3h', 'PT1H': '1h', 'PT6H': '6h'}
+dims = {'PT3H': '2d', 'PT1H': '2d', 'PT6H': '3d'}
+for ct, ft in time_map.items():
+    # outfile=Path(f"/scratch/k/k207030/CAS_ESM_coarsened_{zoom_in-1}.zarr")
+    outfile=Path(f"/data2/share/florain/CAS-ESM2_10km_cumulus_{dims[ct]}{ft}_z{zoom_in-1}.zarr")
+
+    out_ds = rechunk_dataset(name="CASESM2_cumulus", params=dict(time=ct), zoom_in=zoom_in, outfile=outfile)
 
 # %%
 chunk_tools.get_chunksizes(out_ds, 'time', order=9, timechunk=16)
