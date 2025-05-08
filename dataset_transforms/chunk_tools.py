@@ -16,7 +16,7 @@ def get_encodings(outds, order, timechunk):
             ),
             compressor=Blosc(cname="zstd", clevel=5, shuffle=Blosc.BITSHUFFLE),
         )
-        for var in outds
+        for var in outds.variables
     }
     return encodings
 

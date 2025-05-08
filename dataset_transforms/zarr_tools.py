@@ -6,22 +6,26 @@ import zarr
 
 logging.basicConfig()
 logger = logging.getLogger("zarr_tools")
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 def create_zarr_structure(path, outds, timechunk, order):
     store = create_store(path)
+    encoding = chunk_tools.get_encodings(
+            outds=outds, timechunk=timechunk, order=order
+        )
+    logger.debug(f"{encoding=}")
     outds.to_zarr(
         store,
-        encoding=chunk_tools.get_encodings(
-            outds=outds, timechunk=timechunk, order=order
-        ),
+        encoding=encoding,
         compute=False,
     )
     store.close()
 
 
 def create_store(path):
+    logger.debug(f" Creating zarr store at {path}")
+
     store = zarr.storage.DirectoryStore(
         path, normalize_keys=False, dimension_separator="/"
     )
