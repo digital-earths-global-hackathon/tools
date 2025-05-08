@@ -18,6 +18,8 @@ def get_encodings(outds, order, timechunk):
         )
         for var in outds.variables
     }
+    if "time" in encodings:
+        del encodings["time"]["dtype"]
     return encodings
 
 
