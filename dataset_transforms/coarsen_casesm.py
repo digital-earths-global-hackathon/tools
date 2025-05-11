@@ -44,7 +44,7 @@ def process_ds(in_ds, zoom_out):
 
 def compute_read_chunks(zoom_out):
     read_chunk_size = chunk_tools.compute_chunksize(zoom_out) * 4
-    time_chunk = 16 * 4**10 // read_chunk_size
+    time_chunk = 18 * 4**10 // read_chunk_size
     chunks = dict(cell=read_chunk_size, time=time_chunk, lev=5)
     logger.debug(f" {time_chunk=}")
     return chunks
@@ -54,20 +54,20 @@ def compute_read_chunks(zoom_out):
 zoom_in = 9
 time_map = {"PT3H": "3h", "PT1H": "1h", "PT6H": "6h"}
 dims = {"PT3H": "2d", "PT1H": "2d", "PT6H": "3d"}
-name = "CASESM2_nocumulus"
-for ct, ft in time_map.items():
-    params = dict(time=ct)
-    # outfile=Path(f"/scratch/k/k207030/CAS_ESM_coarsened_{zoom_in-1}.zarr")
-    outfile = Path(
-        f"/data2/share/florain/CAS-ESM2_10km_cumulus_{dims[ct]}{ft}_z{zoom_in - 1}.zarr"
-    )
-    try:
-        out_ds = rechunk_dataset(
-            name=name, params=params, zoom_in=zoom_in, outfile=outfile
-        )
-    except Exception as e:
-        logger.error(f"Failed to process {name} with parameters {params}: {e}")
+for zoom_in in range (8,0,-1):
+    for variant in [ "cumulus", "nocumulus"]:
+        name = f"casesm2_{variant}"
+        for ct, ft in time_map.items():
+            params = dict(time=ct)
+            # outfile=Path(f"/scratch/k/k207030/CAS_ESM_coarsened_{zoom_in-1}.zarr")
+            outfile = Path(
+                f"/data2/share/florain/CAS-ESM2_10km_{variant}_{dims[ct]}{ft}_z{zoom_in - 1}.zarr"
+            )
+            try:
+                out_ds = rechunk_dataset(
+                    name=name, params=params, zoom_in=zoom_in, outfile=outfile
+                )
+            except Exception as e:
+                logger.error(f"Failed to process {name} with parameters {params}: {e}")
+                raise e
 
-# %%
-chunk_tools.get_chunksizes(out_ds, "time", order=9, timechunk=16)
-# %%
