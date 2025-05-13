@@ -1,0 +1,82 @@
+{
+	order cache before reverse_proxy
+}
+
+http://server04:2081 {
+	@cache_a path /catalog/*
+	handle @cache_a {
+		reverse_proxy https://digital-earths-global-hackathon.github.io:443 {
+			header_up Host {upstream_hostport}
+		}
+		header Cache-Control "public, max-age=3600"
+		cache {
+			badger {
+				path /data2/share/florain/badger/catalog
+			}
+			ttl 2d
+		}
+	}
+
+	@cache_jasmin path /jasmin/*
+	handle @cache_jasmin {
+		uri strip_prefix /jasmin
+		#        uri replace ^ /
+		reverse_proxy https://hackathon-o.s3-ext.jc.rl.ac.uk:443 {
+			header_up Host {upstream_hostport}
+			transport http {
+				response_header_timeout 30s
+				read_timeout 60s
+			}
+		}
+		header Cache-Control "public, max-age=3600"
+		cache {
+			badger {
+				path /data2/share/florain/badger/jasmin
+			}
+			ttl 2d
+		}
+	}
+	@cache_dkrz-minio path /dkrz-minio/*
+	handle @cache_dkrz-minio {
+		uri strip_prefix /dkrz-minio
+		#        uri replace ^ /
+		reverse_proxy https://s3.eu-dkrz-1.dkrz.cloud:443 {
+			header_up Host {upstream_hostport}
+			transport http {
+				response_header_timeout 30s
+				read_timeout 60s
+			}
+		}
+		header Cache-Control "public, max-age=3600"
+		cache {
+			badger {
+				path /data2/share/florain/badger/dkrz-minio
+			}
+			ttl 2d
+		}
+	}
+	@cache_dkrz-swift path /dkrz-swift/*
+	handle @cache_dkrz-swift {
+		uri strip_prefix /dkrz-swift
+		#        uri replace ^ /
+		reverse_proxy https://swift.dkrz.de:443 {
+			header_up Host {upstream_hostport}
+			transport http {
+				response_header_timeout 30s
+				read_timeout 60s
+			}
+		}
+		header Cache-Control "public, max-age=3600"
+		cache {
+			badger {
+				path /data2/share/florain/badger/dkrz-swift
+			}
+			ttl 2d
+		}
+	}
+
+	# Default handler for other requests
+	handle {
+		respond "404 Not Found" 404
+	}
+}
