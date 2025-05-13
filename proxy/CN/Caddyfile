@@ -74,6 +74,25 @@ http://server04:2081 {
 			ttl 2d
 		}
 	}
+	@cache_nowake path /nowake/*
+	handle @cache_nowake {
+		uri strip_prefix /nowake
+		#        uri replace ^ /
+		reverse_proxy https://nowake.nicam.jp:443 {
+			header_up Host {upstream_hostport}
+			transport http {
+				response_header_timeout 30s
+				read_timeout 60s
+			}
+		}
+		header Cache-Control "public, max-age=3600"
+		cache {
+			badger {
+				path /data2/share/florain/badger/nowake
+			}
+			ttl 2d
+		}
+	}
 
 	# Default handler for other requests
 	handle {
