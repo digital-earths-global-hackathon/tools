@@ -44,8 +44,8 @@ http://server03:2081 {
 		reverse_proxy https://hackathon-o.s3-ext.jc.rl.ac.uk:443 {
 			header_up Host {upstream_hostport}
 			transport http {
-				response_header_timeout 30s
-				read_timeout 60s
+				response_header_timeout 120s
+				read_timeout 120s
 			}
 		}
 		header Cache-Control "public, max-age=3600"
@@ -71,8 +71,8 @@ http://server03:2081 {
 		reverse_proxy https://s3.eu-dkrz-1.dkrz.cloud:443 {
 			header_up Host {upstream_hostport}
 			transport http {
-				response_header_timeout 30s
-				read_timeout 60s
+				response_header_timeout 120s
+				read_timeout 120s
 			}
 		}
 		header Cache-Control "public, max-age=3600"
@@ -98,8 +98,8 @@ http://server03:2081 {
 		reverse_proxy https://swift.dkrz.de:443 {
 			header_up Host {upstream_hostport}
 			transport http {
-				response_header_timeout 30s
-				read_timeout 60s
+				response_header_timeout 120s
+				read_timeout 120s
 			}
 		}
 		header Cache-Control "public, max-age=3600"
@@ -125,8 +125,8 @@ http://server03:2081 {
 		reverse_proxy https://nowake.nicam.jp:443 {
 			header_up Host {upstream_hostport}
 			transport http {
-				response_header_timeout 30s
-				read_timeout 60s
+				response_header_timeout 120s
+				read_timeout 120s
 			}
 		}
 		header Cache-Control "public, max-age=3600"
@@ -181,8 +181,8 @@ http://10.2.202.3:2081 {
 		reverse_proxy https://hackathon-o.s3-ext.jc.rl.ac.uk:443 {
 			header_up Host {upstream_hostport}
 			transport http {
-				response_header_timeout 30s
-				read_timeout 60s
+				response_header_timeout 120s
+				read_timeout 120s
 			}
 		}
 		header Cache-Control "public, max-age=3600"
@@ -208,8 +208,8 @@ http://10.2.202.3:2081 {
 		reverse_proxy https://s3.eu-dkrz-1.dkrz.cloud:443 {
 			header_up Host {upstream_hostport}
 			transport http {
-				response_header_timeout 30s
-				read_timeout 60s
+				response_header_timeout 120s
+				read_timeout 120s
 			}
 		}
 		header Cache-Control "public, max-age=3600"
@@ -235,8 +235,8 @@ http://10.2.202.3:2081 {
 		reverse_proxy https://swift.dkrz.de:443 {
 			header_up Host {upstream_hostport}
 			transport http {
-				response_header_timeout 30s
-				read_timeout 60s
+				response_header_timeout 120s
+				read_timeout 120s
 			}
 		}
 		header Cache-Control "public, max-age=3600"
@@ -262,8 +262,8 @@ http://10.2.202.3:2081 {
 		reverse_proxy https://nowake.nicam.jp:443 {
 			header_up Host {upstream_hostport}
 			transport http {
-				response_header_timeout 30s
-				read_timeout 60s
+				response_header_timeout 120s
+				read_timeout 120s
 			}
 		}
 		header Cache-Control "public, max-age=3600"
