@@ -45,7 +45,7 @@ remotes:
   - remote_name: nowake
     remote_uri: https://nowake.nicam.jp:443
   - remote_name: dkrz-minio
-    remote_uri: https://s3.eu-dkrz-1.dkrz.cloud:4433
+    remote_uri: https://s3.eu-dkrz-1.dkrz.cloud:443
 
 servers:
   - server_name: server03
