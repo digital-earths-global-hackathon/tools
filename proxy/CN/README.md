@@ -15,10 +15,18 @@ Make sure to have the xcaddy in your path (might be in `~/go/bin`)
  ln -s PATH_TO/Caddyfile .
 ```
 
-Adjust the dockerfile to have the "official" name of your server in the first line, and a good path for the caches (The directories might need to be created)
+Adjust the `caddy.yaml` file, this should mainly concern the file/dir names at the top, and the names, the proxy should respond to (at the bottom)
+
+Generate a new caddy file
 
 ```
-./caddy start
+python gen_caddyfile.py caddy.yaml > Caddyfile
+```
+
+and place it into the directory where you want to start caddy.
+
+```
+caddy start
 ```
 
 on config changes
