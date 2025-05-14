@@ -11,8 +11,8 @@ Install xcaddy (`go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest`)
 Make sure to have the xcaddy in your path (might be in `~/go/bin`)
 
 ```
-xcaddy build --with github.com/darkweak/souin/plugins/caddy --with github.com/darkweak/storages/badger/caddy
-ln -s PATH_TO/Caddyfile .
+ xcaddy build --with github.com/darkweak/souin/plugins/caddy --with github.com/darkweak/storages/badger/caddy --with github.com/darkweak/storages/nuts/caddy 
+ ln -s PATH_TO/Caddyfile .
 ```
 
 Adjust the dockerfile to have the "official" name of your server in the first line, and a good path for the caches (The directories might need to be created)
