@@ -1,8 +1,8 @@
 logging:
   filename : caddy.log
-  level : debug
+  level : info
 
-cache_basedir : /tmp
+cache_basedir : /data2/share/florain/proxy
 
 template_cache_handle : |
     @cache_{remote_name} path /{remote_name}/*
@@ -40,13 +40,15 @@ remotes:
     remote_uri: https://digital-earths-global-hackathon.github.io:443
   - remote_name: dkrz-swift
     remote_uri: https://swift.dkrz.de:443
+  - remote_name: eerie.cloud
+    remote_uri: https://eerie.cloud.dkrz.de:443
   - remote_name: nowake
     remote_uri: https://nowake.nicam.jp:443
   - remote_name: dkrz-minio
     remote_uri: https://s3.eu-dkrz-1.dkrz.cloud:4433
 
 servers:
-  - server_name: localhost
+  - server_name: server03
     server_port: 2081
-  - server_name: 127.0.0.1
+  - server_name: 10.2.202.3
     server_port: 2081
