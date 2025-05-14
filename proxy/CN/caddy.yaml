@@ -14,6 +14,8 @@ template_cache_handle : |
           configuration {{
             Dir {cachedir}
             ttl 2d
+            CommitBufferSize 419430400
+            SyncEnable false
           }}
         }}
         ttl 2d
@@ -48,7 +50,7 @@ remotes:
     remote_uri: https://s3.eu-dkrz-1.dkrz.cloud:443
 
 servers:
-  - server_name: server03
+  - server_name: server06
     server_port: 2081
-  - server_name: 10.2.202.3
+  - server_name: 10.2.202.6
     server_port: 2081
