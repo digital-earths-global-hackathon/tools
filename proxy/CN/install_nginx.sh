@@ -99,27 +99,27 @@ http {
         location /jasmin/ {
             proxy_pass https://hackathon-o.s3-ext.jc.rl.ac.uk:443/;
             proxy_http_version 1.1;
-            include /Users/flo/nginx_conf/proxy_cache_common.conf;
+            include $CONF_DIR/proxy_cache_common.conf;
         }
         location /catalog/ {
             proxy_pass https://digital-earths-global-hackathon.github.io:443/;
-            include /Users/flo/nginx_conf/proxy_cache_common.conf;
+            include $CONF_DIR/proxy_cache_common.conf;
         }
         location /dkrz-swift/ {
             proxy_pass https://swift.dkrz.de:443/;
-            include /Users/flo/nginx_conf/proxy_cache_common.conf;
+            include $CONF_DIR/proxy_cache_common.conf;
         }
         location /eerie.cloud/ {
             proxy_pass https://eerie.cloud.dkrz.de:443/;
-            include /Users/flo/nginx_conf/proxy_cache_common.conf;
+            include $CONF_DIR/proxy_cache_common.conf;
         }
         location /nowake/ {
             proxy_pass https://nowake.nicam.jp:443/;
-            include /Users/flo/nginx_conf/proxy_cache_common.conf;
+            include $CONF_DIR/proxy_cache_common.conf;
         }
         location /dkrz-minio/ {
             proxy_pass https://s3.eu-dkrz-1.dkrz.cloud:443/;
-            include /Users/flo/nginx_conf/proxy_cache_common.conf;
+            include $CONF_DIR/proxy_cache_common.conf;
         }
         location /nginx_status {
             stub_status;
