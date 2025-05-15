@@ -4,7 +4,11 @@ set -evxu
 
 NGINX_VERSION="1.28.0"
 INSTALL_DIR="$HOME/nginx"
-CACHE_DIR="$HOME/nginx_cache"
+if [ -d /data2/share/florain ] ; then 
+    CACHE_DIR="/data2/share/florain/nginx"
+else
+    CACHE_DIR="$HOME/nginx_cache"
+fi
 CONF_DIR="$HOME/nginx_conf"
 CONF_FILE="$CONF_DIR/nginx.conf"
 COMMON_CONF="$CONF_DIR/proxy_cache_common.conf"
@@ -101,8 +105,8 @@ http {
             proxy_http_version 1.1;
             include $CONF_DIR/proxy_cache_common.conf;
         }
-        location /catalog/ {
-            proxy_pass https://digital-earths-global-hackathon.github.io:443/catalog/;
+        location /catalog {
+            proxy_pass https://digital-earths-global-hackathon.github.io:443;
             include $CONF_DIR/proxy_cache_common.conf;
         }
         location /dkrz-swift/ {
