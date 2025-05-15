@@ -102,7 +102,7 @@ http {
             include $CONF_DIR/proxy_cache_common.conf;
         }
         location /catalog/ {
-            proxy_pass https://digital-earths-global-hackathon.github.io:443/;
+            proxy_pass https://digital-earths-global-hackathon.github.io:443/catalog/;
             include $CONF_DIR/proxy_cache_common.conf;
         }
         location /dkrz-swift/ {
