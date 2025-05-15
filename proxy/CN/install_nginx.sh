@@ -86,6 +86,8 @@ http {
     default_type  application/octet-stream;
 
     sendfile on;
+    fastcgi_read_timeout 600;
+    proxy_read_timeout 600;
 
 #    aio threads;
 
