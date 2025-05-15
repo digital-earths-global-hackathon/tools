@@ -113,16 +113,6 @@ def get_compressor():
     return numcodecs.Blosc("zstd", clevel=6)
 
 
-def generate_encoding(ds: xr.Dataset) -> dict:
-    encoding = {}
-    compressor = numcodecs.Blosc(
-        cname="zstd", clevel=5, shuffle=numcodecs.Blosc.BITSHUFFLE
-    )
-    for name in ds.data_vars:
-        encoding[name] = {"compressor": compressor}
-    return encoding
-
-
 def rechunk_dataset(ds: xr.Dataset, chunks_per_dims: dict) -> xr.Dataset:
     for var in filter(
         lambda x: x.dims in chunks_per_dims.keys(), ds.data_vars.values()
