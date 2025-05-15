@@ -45,9 +45,12 @@ if [ ! -x "$INSTALL_DIR/sbin/nginx" ]; then
     make install
     cd ..
     # rm -rf nginx-$NGINX_VERSION*
+    cp ${INSTALL_DIR}/conf/mime.types ${CONF_DIR}/mime.types
 else
     echo "✅ Nginx already installed at $INSTALL_DIR"
 fi
+
+
 
 # Write shared proxy/cache config
 cat > "$COMMON_CONF" <<EOF
