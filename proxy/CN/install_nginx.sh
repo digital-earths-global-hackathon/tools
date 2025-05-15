@@ -16,10 +16,10 @@ mkdir -p "$INSTALL_DIR" "$CACHE_DIR" "$CONF_DIR"
 if [ ! -x "$INSTALL_DIR/sbin/nginx" ]; then
     echo "🔧 Installing Nginx $NGINX_VERSION locally..."
 
-    if [ ! -f nginx-$NGINX_VERSION.tar.gz ]
+    if [ ! -f nginx-$NGINX_VERSION.tar.gz ]; then
         wget http://nginx.org/download/nginx-$NGINX_VERSION.tar.gz
     fi
-    if [ ! -f pcre2-10.45.tar.bz2 ]
+    if [ ! -f pcre2-10.45.tar.bz2 ]; then
         wget https://github.com/PCRE2Project/pcre2/releases/download/pcre2-10.45/pcre2-10.45.tar.bz2
         tar xf pcre2-10.45.tar.bz2
     fi
