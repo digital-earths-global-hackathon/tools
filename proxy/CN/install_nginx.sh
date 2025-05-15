@@ -23,6 +23,12 @@ if [ ! -x "$INSTALL_DIR/sbin/nginx" ]; then
         wget https://github.com/PCRE2Project/pcre2/releases/download/pcre2-10.45/pcre2-10.45.tar.bz2
         tar xf pcre2-10.45.tar.bz2
     fi
+
+    if [ ! -f openssl-3.5.0.tar.gz ]; then
+    https://github.com/openssl/openssl/releases/download/openssl-3.5.0/openssl-3.5.0.tar.gz
+        tar xf openssl-3.5.0.tar.gz
+    fi
+
     tar xf nginx-$NGINX_VERSION.tar.gz
     cd nginx-$NGINX_VERSION
 
@@ -32,7 +38,8 @@ if [ ! -x "$INSTALL_DIR/sbin/nginx" ]; then
         --with-http_v2_module \
         --with-http_slice_module \
         --with-http_stub_status_module \
-        --with-pcre=$(pwd)/../pcre2-10.45/
+        --with-pcre=$(pwd)/../pcre2-10.45 \
+        --with-openssl=$(pwd)/../openssl-3.5.0
 
     make -j
     make install
