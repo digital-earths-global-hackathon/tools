@@ -25,7 +25,7 @@ if [ ! -x "$INSTALL_DIR/sbin/nginx" ]; then
     fi
 
     if [ ! -f openssl-3.5.0.tar.gz ]; then
-    https://github.com/openssl/openssl/releases/download/openssl-3.5.0/openssl-3.5.0.tar.gz
+        wget https://github.com/openssl/openssl/releases/download/openssl-3.5.0/openssl-3.5.0.tar.gz
         tar xf openssl-3.5.0.tar.gz
     fi
 
