@@ -94,7 +94,7 @@ http {
     sendfile on;
 send_timeout                60s;
 reset_timedout_connection on;
-    
+resolver 8.8.8.8 1.1.1.1 114.114.114.114 223.6.6.6 valid=10s;
 
 #    aio threads;
 
@@ -106,20 +106,35 @@ reset_timedout_connection on;
 
     access_log $INSTALL_DIR/logs/access.log cache_status;
 
+upstream jasmin {
+        zone jasmin 64k;
+        keepalive 32;
+        server hackathon-o.s3-ext.jc.rl.ac.uk:443 resolve;
+    }
+upstream dkrz-swift {
+        zone dkrz-swift 64k;
+        keepalive 32;
+        server swift.dkrz.de:443 resolve;
+    }
+
     server {
         listen 8080;
 
         location /jasmin/ {
-            proxy_pass https://hackathon-o.s3-ext.jc.rl.ac.uk:443/;
+            proxy_pass https://jasmin/;
             include $CONF_DIR/proxy_cache_common.conf;
+            proxy_set_header Connection "";
+
         }
         location /catalog {
             proxy_pass https://digital-earths-global-hackathon.github.io:443;
             include $CONF_DIR/proxy_cache_common.conf;
         }
         location /dkrz-swift/ {
-            proxy_pass https://swift.dkrz.de:443/;
+            proxy_pass https://dkrz-swift/;
             include $CONF_DIR/proxy_cache_common.conf;
+            proxy_set_header Connection "";
+
         }
         location /eerie.cloud/ {
             proxy_pass https://eerie.cloud.dkrz.de:443/;
