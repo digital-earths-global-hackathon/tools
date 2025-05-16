@@ -76,6 +76,7 @@ proxy_set_header If-Range \$http_if_range;
 proxy_next_upstream error timeout invalid_header http_500 http_502 http_503 http_504;
 proxy_next_upstream_tries 3;
 add_header X-Cache-Status \$upstream_cache_status;
+proxy_http_version 1.1;
 EOF
 
 # Write main nginx.conf
@@ -110,7 +111,6 @@ reset_timedout_connection on;
 
         location /jasmin/ {
             proxy_pass https://hackathon-o.s3-ext.jc.rl.ac.uk:443/;
-            proxy_http_version 1.1;
             include $CONF_DIR/proxy_cache_common.conf;
         }
         location /catalog {
