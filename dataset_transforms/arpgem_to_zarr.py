@@ -137,7 +137,6 @@ def run(time, method, name=dataset_name, dry=False):
     new = rename_dataset(new)
     new = add_crs(new)
 
-    time = "PT6H"
     if time == "PT6H":
         chunks_per_dim = {
             ("time"): -1,
