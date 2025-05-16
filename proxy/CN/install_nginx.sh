@@ -59,8 +59,8 @@ fi
 # Write shared proxy/cache config
 cat > "$COMMON_CONF" <<EOF
 proxy_cache my_cache;
-proxy_cache_valid 200 302 30d;
-proxy_cache_valid 404 3m;
+proxy_cache_valid 200  30d;
+proxy_cache_valid 404 302 3m;
 proxy_cache_valid 101 504 0s;
 proxy_cache_valid any 30d;
 proxy_cache_use_stale error timeout updating;
