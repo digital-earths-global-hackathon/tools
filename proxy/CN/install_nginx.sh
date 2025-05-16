@@ -59,12 +59,17 @@ fi
 # Write shared proxy/cache config
 cat > "$COMMON_CONF" <<EOF
 proxy_cache my_cache;
-proxy_cache_valid 200 302 30m;
+proxy_cache_valid 200 302 30d;
 proxy_cache_valid 404 3m;
+proxy_cache_valid 101 504 0s;
+proxy_cache_valid any 30d;
 proxy_cache_use_stale error timeout updating;
 proxy_cache_revalidate on;
 proxy_cache_min_uses 1;
 proxy_ignore_headers Cache-Control Expires;
+proxy_connect_timeout       60s;
+proxy_send_timeout          60s;
+proxy_read_timeout          60s;
 slice 10m;
 proxy_set_header Range \$http_range;
 proxy_set_header If-Range \$http_if_range;
@@ -86,8 +91,9 @@ http {
     default_type  application/octet-stream;
 
     sendfile on;
-    fastcgi_read_timeout 600;
-    proxy_read_timeout 600;
+send_timeout                60s;
+reset_timedout_connection on;
+    
 
 #    aio threads;
 
@@ -139,7 +145,7 @@ EOF
 
 # Start Nginx
 echo "🚀 Starting Nginx with shared config and 2TB cache..."
-"$INSTALL_DIR/sbin/nginx" -c "$CONF_FILE" -p "$INSTALL_DIR"
+"$INSTALL_DIR/sbin/nginx" -c "$CONF_FILE" -p "$INSTALL_DIR" -s reload
 
 echo "✅ Nginx running on http://localhost:8080"
 echo "📦 Cache: 2TB persistent, 10MB slices, retries enabled"
