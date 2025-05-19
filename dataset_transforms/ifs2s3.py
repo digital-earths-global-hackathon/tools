@@ -14,7 +14,7 @@ def add_crs(z, nside):
 
 
 parser = ArgumentParser()
-parser.add_argument("nside", type=int, choices=[128, 2048])
+parser.add_argument("nside", type=int, choices=[128, 512, 2048])
 parser.add_argument("freq", type=str)
 parser.add_argument("--only", type=str, nargs="*", default=None)
 parser.add_argument("--nprocs", type=int, default=64)
@@ -140,7 +140,6 @@ if args.freq == "hourly":
         "pv": "pv",
     })
 
-    ## Do we need to rename the following variables?
     variables3d_snow = filter_vardict({
         "level_snow": "level",
         **{v: v for v in
@@ -243,13 +242,13 @@ if args.freq == "monthly":
 
     if args.nside <= 128:
         chunks_per_dim = {
-            2: (12, 4**7),
-            3: (12, 10, 4**7),
+            2: (4, 4**6),
+            3: (4, 10, 4**6),
         }
     else:
         chunks_per_dim = {
-            2: (12, 4**8),
-            3: (12, 10, 4**8),
+            2: (4, 4**8),
+            3: (4, 10, 4**8),
         }
 
     variables = {'time': 'time',
