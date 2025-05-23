@@ -1,0 +1,81 @@
+vars_3d:
+  vars:
+    cli:
+      lower_bound: 0
+      upper_bound: 0.001
+      units: kg/kg
+    clw:
+      lower_bound: 0
+      upper_bound: 0.01
+      units: kg/kg
+    hur:
+      lower_bound: 0
+      upper_bound: 1
+      units: '1'
+    hus:
+      lower_bound: 0
+      upper_bound: 0.05
+      units: kg/kg
+    qg:
+      lower_bound: 0
+      upper_bound: 0.002
+      units: kg/kg
+    qr:
+      lower_bound: 0
+      upper_bound: 0.01
+      units: kg/kg
+    qs:
+      lower_bound: 0
+      upper_bound: 0.01
+      units: kg/kg
+    ta:
+      lower_bound: 100
+      upper_bound: 350
+      units: K
+    ua:
+      lower_bound: -350
+      upper_bound: 350
+      units: m/s
+    va:
+      lower_bound: -350
+      upper_bound: 350
+      units: m/s
+    wa:
+      lower_bound: -50
+      upper_bound: 50
+      units: m/s
+    zg:
+      lower_bound: -200
+      upper_bound: 9000
+      units: m
+
+  levels:
+    pressure_level:
+      units : "hPa"
+      values:
+        - 1
+        - 5
+        - 10
+        - 20
+        - 30
+        - 50
+        - 70
+        - 100
+        - 150
+        - 200
+        - 250
+        - 300
+        - 400
+        - 500
+        - 600
+        - 700
+        - 750
+        - 800
+        - 850
+        - 875
+        - 900
+        - 925
+        - 950
+        - 975
+        - 1000
+
