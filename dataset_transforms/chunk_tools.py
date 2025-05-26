@@ -16,8 +16,10 @@ def get_encodings(outds, order, timechunk):
             ),
             compressor=Blosc(cname="zstd", clevel=5, shuffle=Blosc.BITSHUFFLE),
         )
-        for var in outds
+        for var in outds.variables
     }
+    if "time" in encodings:
+        del encodings["time"]["dtype"]
     return encodings
 
 
@@ -37,12 +39,12 @@ def get_chunksizes(outds, var, order, timechunk):
     timechunk = min(timechunk, var_shape[0])
     spacechunk = compute_chunksize(order=order)
     if len(var_shape) == 1:
-        return min(var_shape[0], 1024**2)
+        return (min(var_shape[0], 1024**2),)
     elif len(var_shape) == 2:
         chunksizes = (timechunk, spacechunk)
         return chunksizes
     elif len(var_shape) == 3:
-        chunksizes = (timechunk, 5, spacechunk)
+        chunksizes = (timechunk, 5, spacechunk // 4)
         return chunksizes
     else:
         raise Exception(
