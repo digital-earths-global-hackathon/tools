@@ -1,0 +1,35 @@
+#!/bin/bash
+
+#SBATCH --job-name=run_coarsen_ifs
+#SBATCH --output=run_coarsen_ifs_%j.log
+#SBATCH --error=run_coarsen_ifs_%j.log
+#SBATCH --time=8:00:00
+#SBATCH --partition=interactive
+#SBATCH --mem=100G
+#SBATCH --account=bk1414
+#SBATCH --mail-type=END,FAIL
+
+
+
+export MAMBA_EXE='/home/k/k202134/.local/bin/micromamba';
+export MAMBA_ROOT_PREFIX='/home/k/k202134/micromamba';
+__mamba_setup="$("$MAMBA_EXE" shell hook --shell bash --root-prefix "$MAMBA_ROOT_PREFIX" 2> /dev/null)"
+if [ $? -eq 0 ]; then
+    eval "$__mamba_setup"
+else
+    alias micromamba="$MAMBA_EXE"  # Fallback on help from micromamba activate
+fi
+alias conda="micromamba"
+alias mamba="micromamba"
+unset __mamba_setup
+
+
+micromamba activate easy
+
+set -evx
+
+rm -rf /scratch/k/k202134/ifs_coarsened.zarr
+
+which python
+
+python coarsen_ifs.py
