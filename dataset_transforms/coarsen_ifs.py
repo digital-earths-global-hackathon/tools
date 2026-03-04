@@ -1,10 +1,15 @@
 #!/usr/bin/env python
 
 # %%
+import os
+import logging
 import intake
 import zarr_tools
 from pathlib import Path
 
+logger = logging.getLogger("coarsen_ifs")
+logger.setLevel(logging.INFO)
+logging.basicConfig(level=logging.INFO)
 # %%
 
 catalog_file = "https://digital-earths-global-hackathon.github.io/catalog/catalog.yaml"
@@ -18,12 +23,12 @@ catalog_params = {
 sim = intake.open_catalog(catalog_file)[catalog_location][catalog_source]
 
 ds = sim(**catalog_params, chunks=dict(time=4, level=5)).to_dask()
-ds
+logger.info("original dataset:\n%s", ds)
 # %%
 
-ds_coarsened = ds.isel(time=slice(0, 24)).coarsen(value=64).mean()
+ds_coarsened = ds.isel(time=slice(0, 48)).coarsen(value=64).mean()
 
-print(ds_coarsened)
+logger.info("coarsened dataset:\n%s", ds_coarsened)
 # %%
 
 rename_dict = {
@@ -77,12 +82,13 @@ ds_out = ds_coarsened.rename(rename_dict)[
         "hflsu",
     ]
 ]
-ds_out
+logger.info("final dataset:\n%s", ds_out)
 
 # %%
-zarr_tools.create_zarr_structure(
-    "/scratch/k/k202134/ifs_coarsened.zarr", ds_out, timechunk=4, order=8
-)
+if not os.path.isdir("/scratch/k/k202134/ifs_coarsened.zarr"):
+    zarr_tools.create_zarr_structure(
+        "/scratch/k/k202134/ifs_coarsened.zarr", ds_out, timechunk=4, order=8
+    )
 zarr_tools.write_parts(
     ds_out, Path("/scratch/k/k202134/ifs_coarsened.zarr"), time_chunk=4
 )
