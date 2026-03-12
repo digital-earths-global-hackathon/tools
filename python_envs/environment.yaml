@@ -12,7 +12,7 @@ dependencies:
 - dask
 - dask-jobqueue
 - distributed
-- easygems
+- easygems!=0.1.4
 - fastparquet
 - flox
 - h5netcdf
