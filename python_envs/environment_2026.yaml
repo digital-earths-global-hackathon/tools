@@ -60,4 +60,4 @@ dependencies:
 - pip:
   - gribscan
 
-name: easy
+name: easy-2026
