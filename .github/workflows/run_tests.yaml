@@ -36,7 +36,7 @@ jobs:
     - name: initialize conda
       uses: conda-incubator/setup-miniconda@v3
       with:
-        activate-environment: easy
+        activate-environment: easy-2026
         auto-activate-base: false
         use-mamba: true
         miniforge-version: latest
@@ -51,7 +51,7 @@ jobs:
       id: conda_cache
     - name: install conda environment
       run:
-        mamba env update -n easy -f python_envs/environment.yaml
+        mamba env update -n easy-2026 -f python_envs/environment_2026.yaml
       id: install_conda_env
     - name: upload conda environment to cache
       uses: actions/cache/save@v4
