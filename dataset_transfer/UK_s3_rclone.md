@@ -1,6 +1,11 @@
 # Downloading data from the UK node S3 store using rclone
 
-Author: Sam Green; sam.green@unsw.edu.au
+Authors: Sam Green, sam.green@unsw.edu.au; Mark Muetzelfeldt; mark.muetzelfeldt@reading.ac.uk
+
+Set up for version v5 of the data - as used during the hackathon.
+
+**Note, this is the current version (5 June, 2025) and the one that was used in the hackathon, but there is a new version in development
+This is expected to be ready by 18 July, 2025 - contact mark.muetzelfeldt@reading.ac.uk for more info.**
 
 The Global Hackathon UK node offers data access via [their S3 store](https://hackathon-o.s3-ext.jc.rl.ac.uk).
 
@@ -36,7 +41,7 @@ Note: *leave blank* means press the 'return/enter' key without adding anything.
 Verify your Zarr store path with:
 
 ```bash
-rclone lsf hackathon:sim-data/dev/glm.n2560_RAL3p3/v4/data.healpix.PT1H.z1.zarr
+rclone lsf hackathon:sim-data/dev/v5/glm.n2560_RAL3p3/um.PT1H.hp_z1.zarr
 ```
 
 ## Step 3: Download (sync) the Zarr store locally:
@@ -44,7 +49,7 @@ rclone lsf hackathon:sim-data/dev/glm.n2560_RAL3p3/v4/data.healpix.PT1H.z1.zarr
 Use sync as it only downloads updated or missing files. So if your download crashes running it again will only transfer files you don't have.
 
 ```bash
-rclone sync -P hackathon:sim-data/dev/glm.n2560_RAL3p3/v4/data.healpix.PT1H.z1.zarr ./data.healpix.PT1H.z1.zarr --transfers=40 --multi-thread-streams=10 --checkers=100
+rclone sync -P hackathon:sim-data/dev/v5/glm.n2560_RAL3p3/um.PT1H.hp_z1.zarr ./data.healpix.PT1H.z1.zarr --transfers=40 --multi-thread-streams=10 --checkers=100
 ```
 
 - `-P`: Shows real-time progress.
@@ -63,6 +68,7 @@ set -evxu
 
 target_dir=/path/to/directory # YOU WILL NEED TO ADJUST THIS!
 
+version=v5
 sims=(
     # glm.n1280_CoMA9  # currently has no zarr store.
     glm.n2560_RAL3p3
@@ -90,7 +96,7 @@ for sim in "${sims[@]}"; do
             mkdir -p $sim
             cd $sim
 
-            rclone sync -P hackathon:sim-data/dev/$sim/v4/data.healpix.$freq.z$zoom.zarr ./data.healpix.$freq.z$zoom.zarr --transfers=40 --multi-thread-streams=10 --checkers=100
+            rclone sync -P hackathon:sim-data/dev/$version/$sim/um.$freq.hp_z$zoom.zarr ./data.healpix.$freq.z$zoom.zarr --transfers=40 --multi-thread-streams=10 --checkers=100
         done
     done
 done
