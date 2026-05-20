@@ -29,7 +29,7 @@ dependencies:
 - jupyter
 - jupyterlab
 - jupytext
-- libnetcdf>=4.9.2
+- libnetcdf>=4.9.2,!=4.10.0
 - matplotlib
 - netcdf4
 - numba
