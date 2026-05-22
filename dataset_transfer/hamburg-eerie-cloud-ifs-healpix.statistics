@@ -1,0 +1,61 @@
+import pandas as pd
+import hvplot.pandas
+stats = {
+    pd.to_datetime(a,format="%Y%m%d"): {
+        "retrieved_tb_healpix2048": b / 1024**4,
+        "retrieved_tb_healpix128": e / 1024**4,
+        "succesfull_get_requests_healpix2048": c,
+        "succesfull_get_requests_healpix128": d,
+        "no_200_requests": g
+    }
+    for a, (b, c, d, e, g) in zip(
+        range(20250512, 20250512 + 5),
+        zip(
+            [1601037201069, 5393555417232, 11118893468789, 2500936269388, 98155743],
+            [19894, 69542, 135001, 31950, 27346],
+            [124099, 1037866, 1041379, 367274, 306],
+            [55201771414, 391175826247, 444554178042, 128319354841, 98155743],
+            [485, 4999, 37043, 209692, 9351]
+        )
+    )
+}
+df=pd.DataFrame(stats).transpose()
+df.index=df.index.strftime('%Y-%m-%d')
+df["chunksize_2048"]=df["retrieved_tb_healpix2048"]/df["succesfull_get_requests_healpix2048"]
+df["chunksize_128"]=df["retrieved_tb_healpix128"]/df["succesfull_get_requests_healpix128"]
+df["total_sgr"]=df["succesfull_get_requests_healpix128"]+df["succesfull_get_requests_healpix2048"]
+df["total_tb"]=df["retrieved_tb_healpix2048"]+df["retrieved_tb_healpix128"]
+df["download_speed"]=df["total_tb"]/24/60/60*1024*1024
+df["failure_rate"]=df["no_200_requests"]/(df["total_sgr"]+df["no_200_requests"])
+print(df["total_sgr"].sum())
+print(df["total_tb"].sum())
+print(df["chunksize_2048"].mean()*1024**2)
+print(df["chunksize_128"].mean()*1024**2)
+((df[["succesfull_get_requests_healpix2048","succesfull_get_requests_healpix128"]]/100000).hvplot.bar(
+    ylabel="No of get reqeusts [100k]",
+    stacked=True,
+    grid=True,
+    rot=0,
+    legend="bottom",
+    title=""
+)+df[["retrieved_tb_healpix2048","retrieved_tb_healpix128"]].hvplot.bar(
+    ylabel="Volume [TB]",
+    stacked=True,
+    grid=True,
+    rot=0,
+    legend="bottom",
+    title=""
+)+(df["total_tb"]/24/60/60*1024*1024).hvplot.bar(
+    ylabel="Daily average download speed [MB/s]",
+    stacked=True,
+    grid=True,
+    rot=0,
+    title=""
+)+(df["failure_rate"]*100).hvplot.bar(
+    ylabel="Not-200er response rate [%]",
+    stacked=True,
+    grid=True,
+    rot=0,
+    title=""
+)
+).cols(1)
