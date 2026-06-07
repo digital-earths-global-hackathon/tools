@@ -59,5 +59,6 @@ dependencies:
 - pip
 - pip:
   - gribscan
+  - grid4earth
 
 name: easy-2026
