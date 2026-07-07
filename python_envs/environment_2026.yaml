@@ -40,6 +40,7 @@ dependencies:
 - pyflextrkr
 - pystac
 - pytest
+- pytorch  # Required by healpix-resample
 - requests
 - rioxarray
 - ruff
@@ -56,8 +57,12 @@ dependencies:
 - xarray
 - xgcm
 - zarr>3
+- healpix-geo
 - pip
 - pip:
   - gribscan
+  - healpix-plot
+  - healpix-resample
+  - healpix-analyse
 
 name: easy-2026
