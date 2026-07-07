@@ -56,9 +56,12 @@ dependencies:
 - xarray
 - xgcm
 - zarr>3
+- healpix-geo
 - pip
 - pip:
   - gribscan
-  - grid4earth
+  - healpix-plot
+  - healpix-resample
+  - healpix-analyse
 
 name: easy-2026
