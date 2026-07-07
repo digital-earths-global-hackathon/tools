@@ -40,6 +40,7 @@ dependencies:
 - pyflextrkr
 - pystac
 - pytest
+- pytorch  # Required by healpix-resample
 - requests
 - rioxarray
 - ruff
