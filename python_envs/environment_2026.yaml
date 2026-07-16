@@ -39,6 +39,7 @@ dependencies:
 - pandas
 - pyflextrkr
 - pystac
+- pystac-client
 - pytest
 - pytorch  # Required by healpix-resample
 - requests
@@ -56,6 +57,7 @@ dependencies:
 - uxarray
 - xarray
 - xgcm
+- xpystac
 - zarr>3
 - healpix-geo
 - pip
