@@ -56,6 +56,7 @@ dependencies:
 - uxarray
 - xarray
 - xgcm
+- xpystac # for easy opening of stac assets with xarray
 - zarr>3
 - healpix-geo
 - pip
