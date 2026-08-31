@@ -6,22 +6,24 @@ import zarr
 
 logging.basicConfig()
 logger = logging.getLogger("zarr_tools")
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 def create_zarr_structure(path, outds, timechunk, order):
     store = create_store(path)
+    encoding = chunk_tools.get_encodings(outds=outds, timechunk=timechunk, order=order)
+    logger.debug(f"{encoding=}")
     outds.to_zarr(
         store,
-        encoding=chunk_tools.get_encodings(
-            outds=outds, timechunk=timechunk, order=order
-        ),
+        encoding=encoding,
         compute=False,
     )
     store.close()
 
 
 def create_store(path):
+    logger.debug(f" Creating zarr store at {path}")
+
     store = zarr.storage.DirectoryStore(
         path, normalize_keys=False, dimension_separator="/"
     )
@@ -31,6 +33,7 @@ def create_store(path):
 def write_parts(outds: xr.Dataset, path: Path, time_chunk: int):
     status_filename, start = check_for_status(path)
     outds = handle_timeless_variables(outds, path, start)
+    outds = handle_time(outds, path, start)
     handle_time_dependent_variables(outds, path, time_chunk, status_filename, start)
 
 
@@ -48,9 +51,21 @@ def check_for_status(path):
     return status_filename, start
 
 
+def handle_time(outds, path, start):
+    logger.debug("processing time")
+    if start == 0:
+        wds = xr.Dataset(dict(time=outds.time.chunk(len(outds.time))))
+        wds.to_zarr(path, mode="r+")
+
+    drop = ["time"]
+    logger.debug(f" Dropping {drop}")
+    outds = outds.drop_vars(drop)
+    return outds
+
+
 def handle_timeless_variables(outds, path, start):
     timeless = {x: outds[x] for x in outds.variables if "time" not in outds[x].dims}
-    logger.debug(f"{list(timeless)=}")
+    logger.debug(f"processing timeless variables: {list(timeless)=}")
     if start == 0:
         wds = xr.Dataset(timeless)
         wds.to_zarr(path, mode="r+")
@@ -63,7 +78,7 @@ def handle_timeless_variables(outds, path, start):
 
 def handle_time_dependent_variables(outds, path, time_chunk, status_filename, start):
     for i in range(start, len(outds.time), time_chunk):
-        tslice = slice(i, i + time_chunk)
+        tslice = slice(i, min(i + time_chunk, len(outds.time)))
         for var_name in outds:
             write_variable_chunk(outds, var_name, path, tslice)
         with open(status_filename, mode="w") as status:
